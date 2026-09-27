@@ -1,4 +1,8 @@
 <?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require '../vendor/autoload.php';
 include '../config/database.php';
 session_start();
 
@@ -16,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter a valid email address.';
 
     } else {
-        // Check if email exists
         $stmt = $conn->prepare("SELECT id, full_name FROM users WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
@@ -28,24 +31,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_result($id, $full_name);
             $stmt->fetch();
 
-            // Generate a reset token
+            // Generate token
             $token      = bin2hex(random_bytes(32));
             $expires_at = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-            // Save token to database
+            // Save token
             $save = $conn->prepare("INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)");
             $save->bind_param("iss", $id, $token, $expires_at);
             $save->execute();
 
-            // Build reset link
             $reset_link = "http://localhost/multilingual-health-platform/auth/reset_password.php?token=" . $token;
 
-            $success = 'A password reset link has been generated. 
-                        In a live system this would be emailed to you. 
-                        For now, use the link below to reset your password.';
+            // Send email via PHPMailer
+            $mail = new PHPMailer(true);
 
-            // For development — show the link directly
-            $dev_link = $reset_link;
+            try {
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = 'ck697315@gmail.com';     
+                $mail->Password   = 'pusq bjiz qzcm ytlr';       
+                $mail->SMTPSecure = 'tls';
+                $mail->Port       = 587;
+
+                $mail->setFrom('ck697315@gmail.com', 'Samburu Health Platform');
+                $mail->addAddress($email, $full_name);
+
+                $mail->isHTML(true);
+                $mail->Subject = 'Reset Your Password - Samburu Health';
+                $mail->CharSet = 'UTF-8';
+                $mail->Body    = '
+                    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+                        <h2 style="color: #1b4332;">Samburu Health Platform</h2>
+                        <p>Hello ' . htmlspecialchars($full_name) . ',</p>
+                        <p>We received a request to reset your password. Click the button below:</p>
+                        <a href="' . $reset_link . '"
+                            style="display:inline-block; padding: 12px 24px; background:#2e7d32;
+                            color:white; border-radius:6px; text-decoration:none; margin: 20px 0;">
+                            Reset My Password
+                        </a>
+                        <p>This link expires in <strong>1 hour</strong>.</p>
+                        <p>If you did not request this, ignore this email.</p>
+                        <br>
+                        <p style="color:#78909c; font-size:13px;">
+                            Samburu Health Platform — Health education for rural communities
+                        </p>
+                    </div>
+                ';
+
+                $mail->send();
+                $success = 'A password reset link has been sent to ' . htmlspecialchars($email) . '. Please check your inbox.';
+
+            } catch (Exception $e) {
+                $error = 'Email could not be sent. Error: ' . $mail->ErrorInfo;
+            }
         }
     }
 }
@@ -73,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <h2>Forgot Password</h2>
             <p class="auth-subtitle">
-                Enter your email address and we will send you a link to reset your password.
+                Enter your email and we will send you a reset link.
             </p>
 
             <?php if ($error): ?>
@@ -81,11 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <?php if ($success): ?>
-                <div class="alert alert-success">
-                    <?= htmlspecialchars($success) ?>
-                    <br><br>
-                    <a href="<?= $dev_link ?>">Click here to reset your password</a>
-                </div>
+                <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
             <?php endif; ?>
 
             <?php if (!$success): ?>
