@@ -25,4 +25,3 @@ define('LANG_CODES', [
     'maa'       => 'mas'
 ]);
 ?>
-?>
