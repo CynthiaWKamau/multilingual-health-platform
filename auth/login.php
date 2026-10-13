@@ -33,13 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['language']  = $language;
 
                 // Redirect based on role
-                if ($role === 'admin') {
-                    header('Location: ../admin/dashboard.php');
-                } elseif ($role === 'chw') {
-                    header('Location: ../chw/dashboard.php');
-                } else {
-                    header('Location: ../dashboard/index.php');
-                }
+                    if ($role === 'admin') {
+            header('Location: ../admin/index.php');
+            } elseif ($role === 'chw') {
+            header('Location: ../chw/index.php');
+            } else {
+            header('Location: ../dashboard/index.php');
+            }
                 exit();
             }
         }

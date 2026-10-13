@@ -11,7 +11,6 @@ $lang     = $_SESSION['language'] ?? 'english';
 $category = $_GET['category'] ?? 'all';
 $search   = $_GET['search'] ?? '';
 
-// Build query based on category and search
 if ($category !== 'all' && !empty($search)) {
     $stmt = $conn->prepare("SELECT * FROM health_education WHERE category = ? AND title LIKE ? ORDER BY title");
     $like = '%' . $search . '%';
@@ -28,26 +27,16 @@ if ($category !== 'all' && !empty($search)) {
 }
 
 $stmt->execute();
-$result  = $stmt->get_result();
+$result   = $stmt->get_result();
 $articles = $result->fetch_all(MYSQLI_ASSOC);
 
-// Get content in correct language
 function get_content($article, $lang) {
     if ($lang === 'kiswahili' && !empty($article['content_sw'])) {
-        return [
-            'title'   => $article['title'],
-            'content' => $article['content_sw']
-        ];
+        return ['title' => $article['title'], 'content' => $article['content_sw']];
     } elseif ($lang === 'maa' && !empty($article['content_maa'])) {
-        return [
-            'title'   => $article['title'],
-            'content' => $article['content_maa']
-        ];
+        return ['title' => $article['title'], 'content' => $article['content_maa']];
     }
-    return [
-        'title'   => $article['title'],
-        'content' => $article['content']
-    ];
+    return ['title' => $article['title'], 'content' => $article['content']];
 }
 ?>
 <!DOCTYPE html>
@@ -63,18 +52,9 @@ function get_content($article, $lang) {
             padding: 50px 7%;
             color: white;
         }
-        .page-banner h1 {
-            font-size: 36px;
-            color: white;
-            margin-bottom: 8px;
-        }
-        .page-banner p {
-            color: #c8e6c9;
-            font-size: 16px;
-        }
-        .health-section {
-            padding: 50px 7%;
-        }
+        .page-banner h1 { font-size: 36px; color: white; margin-bottom: 8px; }
+        .page-banner p  { color: #c8e6c9; font-size: 16px; }
+        .health-section { padding: 50px 7%; }
         .filter-bar {
             display: flex;
             gap: 12px;
@@ -93,8 +73,7 @@ function get_content($article, $lang) {
             text-decoration: none;
             transition: all 0.2s;
         }
-        .filter-btn:hover,
-        .filter-btn.active {
+        .filter-btn:hover, .filter-btn.active {
             background: #2e7d32;
             color: white;
             border-color: #2e7d32;
@@ -111,10 +90,7 @@ function get_content($article, $lang) {
             font-size: 14px;
             width: 220px;
         }
-        .search-box input:focus {
-            outline: none;
-            border-color: #2e7d32;
-        }
+        .search-box input:focus { outline: none; border-color: #2e7d32; }
         .search-box button {
             padding: 9px 16px;
             background: #2e7d32;
@@ -141,10 +117,7 @@ function get_content($article, $lang) {
             box-shadow: 0 4px 16px rgba(0,0,0,0.08);
             transform: translateY(-2px);
         }
-        .article-header {
-            padding: 20px 22px 14px;
-            border-bottom: 1px solid #f0f0f0;
-        }
+        .article-header { padding: 20px 22px 14px; border-bottom: 1px solid #f0f0f0; }
         .article-category {
             font-size: 11px;
             font-weight: bold;
@@ -155,19 +128,9 @@ function get_content($article, $lang) {
         .cat-maternal { color: #c2185b; }
         .cat-child    { color: #1565c0; }
         .cat-disease  { color: #e65100; }
-        .article-card h3 {
-            font-size: 16px;
-            color: #1b4332;
-            line-height: 1.4;
-        }
-        .article-body {
-            padding: 16px 22px 20px;
-        }
-        .article-body p {
-            font-size: 14px;
-            color: #607d8b;
-            line-height: 1.6;
-        }
+        .article-card h3 { font-size: 16px; color: #1b4332; line-height: 1.4; }
+        .article-body { padding: 16px 22px 20px; }
+        .article-body p { font-size: 14px; color: #607d8b; line-height: 1.6; }
         .read-more {
             display: inline-block;
             margin-top: 14px;
@@ -175,16 +138,7 @@ function get_content($article, $lang) {
             font-size: 13px;
             font-weight: bold;
         }
-        .no-results {
-            text-align: center;
-            padding: 60px;
-            color: #78909c;
-        }
-        .no-results h3 {
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
-        /* MODAL */
+        .no-results { text-align: center; padding: 60px; color: #78909c; }
         .modal-overlay {
             display: none;
             position: fixed;
@@ -196,9 +150,7 @@ function get_content($article, $lang) {
             justify-content: center;
             padding: 20px;
         }
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
         .modal {
             background: white;
             border-radius: 12px;
@@ -218,11 +170,7 @@ function get_content($article, $lang) {
             top: 0;
             background: white;
         }
-        .modal-header h2 {
-            font-size: 22px;
-            color: #1b4332;
-            line-height: 1.3;
-        }
+        .modal-header h2 { font-size: 22px; color: #1b4332; line-height: 1.3; }
         .modal-close {
             background: none;
             border: none;
@@ -237,6 +185,19 @@ function get_content($article, $lang) {
             color: #37474f;
             line-height: 1.8;
         }
+        .lang-switcher-links { display: flex; align-items: center; gap: 6px; }
+        .lang-link {
+            padding: 6px 10px;
+            border: 1.5px solid #ddd;
+            border-radius: 6px;
+            color: #607d8b;
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .lang-link:hover { border-color: #2e7d32; color: #2e7d32; }
+        .lang-active { background: #2e7d32; color: white !important; border-color: #2e7d32; }
         @media (max-width: 768px) {
             .articles-grid { grid-template-columns: 1fr; }
             .filter-bar { flex-direction: column; align-items: flex-start; }
@@ -254,14 +215,14 @@ function get_content($article, $lang) {
             <a href="index.php">Health Education</a>
             <a href="../myth/index.php">Myth vs Fact</a>
             <a href="../symptom/index.php">Symptom Guidance</a>
-            <form method="POST" action="../dashboard/language.php" class="lang-switcher">
-                <select name="preferred_language" onchange="this.form.submit()" class="lang-dropdown">
-                    <option value="english"   <?= $lang === 'english'   ? 'selected' : '' ?>>🌍 English</option>
-                    <option value="kiswahili" <?= $lang === 'kiswahili' ? 'selected' : '' ?>>🇰🇪 Kiswahili</option>
-                    <option value="maa"       <?= $lang === 'maa'       ? 'selected' : '' ?>>🐄 Maa</option>
-                </select>
-                <input type="hidden" name="redirect" value="../health/index.php">
-            </form>
+            <div class="lang-switcher-links">
+                <a href="../dashboard/language.php?lang=english&redirect=../health/index.php"
+                   class="lang-link <?= $lang === 'english'   ? 'lang-active' : '' ?>">🌍 EN</a>
+                <a href="../dashboard/language.php?lang=kiswahili&redirect=../health/index.php"
+                   class="lang-link <?= $lang === 'kiswahili' ? 'lang-active' : '' ?>">🇰🇪 SW</a>
+                <a href="../dashboard/language.php?lang=maa&redirect=../health/index.php"
+                   class="lang-link <?= $lang === 'maa'       ? 'lang-active' : '' ?>">🐄 MAA</a>
+            </div>
             <a href="../auth/logout.php" class="nav-login">Logout</a>
         </nav>
     </header>
@@ -272,14 +233,12 @@ function get_content($article, $lang) {
     </div>
 
     <section class="health-section">
-
-        <!-- Filter Bar -->
         <form method="GET" action="">
             <div class="filter-bar">
-                <a href="?category=all" class="filter-btn <?= $category === 'all' ? 'active' : '' ?>">All</a>
+                <a href="?category=all"      class="filter-btn <?= $category === 'all'      ? 'active' : '' ?>">All</a>
                 <a href="?category=maternal" class="filter-btn <?= $category === 'maternal' ? 'active' : '' ?>">🤰 Maternal Health</a>
-                <a href="?category=child" class="filter-btn <?= $category === 'child' ? 'active' : '' ?>">👶 Child Health</a>
-                <a href="?category=disease" class="filter-btn <?= $category === 'disease' ? 'active' : '' ?>">🏥 Common Diseases</a>
+                <a href="?category=child"    class="filter-btn <?= $category === 'child'    ? 'active' : '' ?>">👶 Child Health</a>
+                <a href="?category=disease"  class="filter-btn <?= $category === 'disease'  ? 'active' : '' ?>">🏥 Common Diseases</a>
                 <div class="search-box">
                     <input type="text" name="search" placeholder="Search articles..." value="<?= htmlspecialchars($search) ?>">
                     <input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>">
@@ -288,7 +247,6 @@ function get_content($article, $lang) {
             </div>
         </form>
 
-        <!-- Articles Grid -->
         <?php if (empty($articles)): ?>
             <div class="no-results">
                 <h3>No articles found</h3>
@@ -297,14 +255,13 @@ function get_content($article, $lang) {
         <?php else: ?>
             <div class="articles-grid">
                 <?php foreach ($articles as $article):
-                    $c = get_content($article, $lang);
+                    $c       = get_content($article, $lang);
                     $preview = substr(strip_tags($c['content']), 0, 120) . '...';
-                    $cat_class = 'cat-' . $article['category'];
-                    $cat_label = ucfirst($article['category']);
                 ?>
-                    <div class="article-card" onclick="openModal(<?= $article['id'] ?>, `<?= htmlspecialchars(addslashes($c['title'])) ?>`, `<?= htmlspecialchars(addslashes($c['content'])) ?>`)">
+                    <div class="article-card"
+                         onclick="openModal(`<?= htmlspecialchars(addslashes($c['title'])) ?>`, `<?= htmlspecialchars(addslashes($c['content'])) ?>`)">
                         <div class="article-header">
-                            <p class="article-category <?= $cat_class ?>"><?= $cat_label ?></p>
+                            <p class="article-category cat-<?= $article['category'] ?>"><?= ucfirst($article['category']) ?></p>
                             <h3><?= htmlspecialchars($c['title']) ?></h3>
                         </div>
                         <div class="article-body">
@@ -315,10 +272,8 @@ function get_content($article, $lang) {
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
-
     </section>
 
-    <!-- Article Modal -->
     <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
         <div class="modal">
             <div class="modal-header">
@@ -335,36 +290,20 @@ function get_content($article, $lang) {
     </footer>
 
     <script>
-        function openModal(id, title, content) {
+        function openModal(title, content) {
             document.getElementById('modalTitle').textContent = title;
             document.getElementById('modalBody').textContent  = content;
             document.getElementById('modalOverlay').classList.add('active');
             document.body.style.overflow = 'hidden';
         }
-
         function closeModalBtn() {
             document.getElementById('modalOverlay').classList.remove('active');
             document.body.style.overflow = '';
         }
-
-        function closeModal(event) {
-            if (event.target === document.getElementById('modalOverlay')) {
-                closeModalBtn();
-            }
+        function closeModal(e) {
+            if (e.target === document.getElementById('modalOverlay')) closeModalBtn();
         }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModalBtn();
-        });
-    </script>
-
-    <!-- Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/multilingual-health-platform/service-worker.js');
-            });
-        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalBtn(); });
     </script>
 
 </body>
