@@ -7,20 +7,26 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_id  = $_SESSION['user_id'];
-$success  = '';
+$user_id = $_SESSION['user_id'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $language = $_POST['preferred_language'];
+// Handle both GET and POST
+$language = $_POST['preferred_language'] ?? $_GET['lang'] ?? '';
+$redirect = $_POST['redirect'] ?? $_GET['redirect'] ?? 'index.php';
 
-    $stmt = $conn->prepare("UPDATE users SET preferred_language = ? WHERE id = ?");
-    $stmt->bind_param("si", $language, $user_id);
-
-    if ($stmt->execute()) {
+if (!empty($language)) {
+    // Validate language
+    $allowed = ['english', 'kiswahili', 'maa'];
+    if (in_array($language, $allowed)) {
+        $stmt = $conn->prepare("UPDATE users SET preferred_language = ? WHERE id = ?");
+        $stmt->bind_param("si", $language, $user_id);
+        $stmt->execute();
         $_SESSION['language'] = $language;
-        $success = 'Language updated successfully.';
     }
 }
+
+header('Location: ' . $redirect);
+exit();
+?>
 
 $current_language = $_SESSION['language'];
 ?>
