@@ -16,7 +16,7 @@ if ($conn->connect_error) {
 define('GOOGLE_TRANSLATE_API_KEY', 'YOUR_GOOGLE_API_KEY_HERE');
 
 // Groq API
-define('GROQ_API_KEY', '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');
+define('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', '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');
 
 // Language codes
 define('LANG_CODES', [

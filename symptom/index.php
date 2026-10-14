@@ -12,15 +12,34 @@ $ai_response = '';
 $user_input  = '';
 $error       = '';
 $db_results  = [];
+$ml_result   = null;
 $search_done = false;
 
+// ── Call ML API ───────────────────────────────
+function call_ml_api($endpoint, $text) {
+    $url  = 'http://127.0.0.1:5000/' . $endpoint;
+    $data = json_encode(['text' => $text]);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    return $response ? json_decode($response, true) : null;
+}
+
+// ── Call Groq AI ──────────────────────────────
 function ask_groq($question, $lang) {
     $api_key = GROQ_API_KEY;
     $url     = 'https://api.groq.com/openai/v1/chat/completions';
 
     $lang_instruction = match($lang) {
         'kiswahili' => 'Respond in Kiswahili.',
-        'maa'       => 'Respond in simple English — the response will be translated to Maa.',
+        'maa'       => 'Respond in simple English.',
         default     => 'Respond in English.'
     };
 
@@ -29,7 +48,7 @@ You ONLY provide health information based on WHO guidelines and Kenya Ministry o
 You do NOT diagnose conditions. You do NOT prescribe medicine.
 Keep responses clear, simple, and short — users may have low literacy.
 Always recommend seeing a Community Health Worker or visiting a health facility for serious symptoms.
-If asked anything outside health topics, politely decline and redirect to health questions.
+If asked anything outside health topics, politely decline.
 " . $lang_instruction;
 
     $data = json_encode([
@@ -50,6 +69,7 @@ If asked anything outside health topics, politely decline and redirect to health
         'Content-Type: application/json',
         'Authorization: Bearer ' . $api_key
     ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     $response = curl_exec($ch);
     curl_close($ch);
 
@@ -57,6 +77,7 @@ If asked anything outside health topics, politely decline and redirect to health
     return $result['choices'][0]['message']['content'] ?? null;
 }
 
+// ── Handle form submission ────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['symptom_input'])) {
     $user_input  = trim($_POST['symptom_input']);
     $search_done = true;
@@ -64,13 +85,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['symptom_input'])) {
     if (empty($user_input)) {
         $error = 'Please describe your symptom or health question.';
     } else {
-        $stmt = $conn->prepare("SELECT * FROM symptom_guidance WHERE symptom LIKE ? OR possible_cause LIKE ? ORDER BY urgency DESC");
-        $like = '%' . $user_input . '%';
+
+        // 1. Call ML classifier
+        $ml_result = call_ml_api('classify-symptom', $user_input);
+
+        // 2. Use ML prediction to search database
+        $search_term = $ml_result['db_search_term'] ?? $user_input;
+
+        $stmt = $conn->prepare("SELECT * FROM symptom_guidance 
+            WHERE symptom LIKE ? OR possible_cause LIKE ? 
+            ORDER BY urgency DESC");
+        $like = '%' . $search_term . '%';
         $stmt->bind_param("ss", $like, $like);
         $stmt->execute();
         $result     = $stmt->get_result();
         $db_results = $result->fetch_all(MYSQLI_ASSOC);
 
+        // 3. Also ask Groq AI
         $ai_response = ask_groq($user_input, $lang);
     }
 }
@@ -91,167 +122,61 @@ function urgency_style($urgency) {
     <title>Symptom Guidance — Samburu Health</title>
     <link rel="stylesheet" href="/multilingual-health-platform/assets/css/style.css">
     <style>
-        .page-banner {
-            background: #1b4332;
-            padding: 50px 7%;
-            color: white;
-        }
-        .page-banner h1 { font-size: 36px; color: white; margin-bottom: 8px; }
-        .page-banner p  { color: #c8e6c9; font-size: 16px; }
-        .symptom-section {
-            padding: 50px 7%;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        .search-card {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 32px;
-            margin-bottom: 36px;
-        }
-        .search-card h2 { font-size: 20px; color: #1b4332; margin-bottom: 8px; }
-        .search-card > p { color: #78909c; font-size: 14px; margin-bottom: 20px; }
-        .input-row { display: flex; gap: 12px; }
-        .input-row input {
-            flex: 1;
-            padding: 13px 16px;
-            border: 1.5px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
-            color: #263238;
-        }
-        .input-row input:focus { outline: none; border-color: #2e7d32; }
-        .input-row button {
-            padding: 13px 24px;
-            background: #2e7d32;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .input-row button:hover { background: #256628; }
-        .quick-symptoms {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 18px;
-        }
-        .quick-btn {
-            padding: 8px 16px;
-            border: 1.5px solid #2e7d32;
-            border-radius: 20px;
-            background: white;
-            color: #2e7d32;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .quick-btn:hover { background: #2e7d32; color: white; }
-        .disclaimer {
-            margin-top: 16px;
-            padding: 10px 14px;
-            background: #fff8e1;
-            border-left: 3px solid #f9a825;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #f57f17;
-        }
-        .ai-card {
-            background: white;
-            border: 1.5px solid #2e7d32;
-            border-radius: 12px;
-            margin-bottom: 28px;
-            overflow: hidden;
-        }
-        .ai-header {
-            background: #2e7d32;
-            padding: 14px 24px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .ai-header h3 { color: white; font-size: 15px; }
-        .ai-header span {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 4px;
-        }
-        .ai-body {
-            padding: 22px 24px;
-            font-size: 15px;
-            color: #37474f;
-            line-height: 1.8;
-            white-space: pre-wrap;
-        }
-        .results-label {
-            font-size: 13px;
-            font-weight: bold;
-            color: #78909c;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 16px;
-        }
-        .symptom-card {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            margin-bottom: 18px;
-            overflow: hidden;
-        }
-        .symptom-card-header {
-            padding: 16px 22px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .symptom-card-header h3 { font-size: 17px; color: #1b4332; }
-        .urgency-badge {
-            font-size: 12px;
-            font-weight: bold;
-            padding: 5px 12px;
-            border-radius: 20px;
-        }
-        .symptom-card-body { padding: 18px 22px; }
-        .symptom-row { margin-bottom: 14px; }
-        .symptom-row-label {
-            font-size: 12px;
-            font-weight: bold;
-            color: #78909c;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-        .symptom-row-value { font-size: 14px; color: #37474f; line-height: 1.6; }
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            color: #78909c;
-            background: white;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-        }
-        .lang-switcher-links { display: flex; align-items: center; gap: 6px; }
-        .lang-link {
-            padding: 6px 10px;
-            border: 1.5px solid #ddd;
-            border-radius: 6px;
-            color: #607d8b;
-            font-size: 12px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        .lang-link:hover { border-color: #2e7d32; color: #2e7d32; }
-        .lang-active { background: #2e7d32; color: white !important; border-color: #2e7d32; }
-        @media (max-width: 768px) {
-            .input-row { flex-direction: column; }
-            .symptom-card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .page-banner { background:#1b4332; padding:50px 7%; color:white; }
+        .page-banner h1 { font-size:36px; color:white; margin-bottom:8px; }
+        .page-banner p  { color:#c8e6c9; font-size:16px; }
+        .symptom-section { padding:50px 7%; max-width:900px; margin:0 auto; }
+        .search-card { background:white; border:1px solid #e0e0e0; border-radius:12px; padding:32px; margin-bottom:28px; }
+        .search-card h2 { font-size:20px; color:#1b4332; margin-bottom:8px; }
+        .search-card > p { color:#78909c; font-size:14px; margin-bottom:20px; }
+        .input-row { display:flex; gap:12px; }
+        .input-row input { flex:1; padding:13px 16px; border:1.5px solid #ddd; border-radius:8px; font-size:15px; }
+        .input-row input:focus { outline:none; border-color:#2e7d32; }
+        .input-row button { padding:13px 24px; background:#2e7d32; color:white; border:none; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; }
+        .input-row button:hover { background:#256628; }
+        .quick-symptoms { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+        .quick-btn { padding:8px 16px; border:1.5px solid #2e7d32; border-radius:20px; background:white; color:#2e7d32; font-size:13px; cursor:pointer; transition:all 0.2s; }
+        .quick-btn:hover { background:#2e7d32; color:white; }
+        .disclaimer { margin-top:16px; padding:10px 14px; background:#fff8e1; border-left:3px solid #f9a825; border-radius:4px; font-size:13px; color:#f57f17; }
+
+        /* ML Result Card */
+        .ml-card { background:white; border:1.5px solid #1565c0; border-radius:12px; margin-bottom:20px; overflow:hidden; }
+        .ml-header { background:#1565c0; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; }
+        .ml-header h3 { color:white; font-size:15px; }
+        .ml-header .ml-badge { background:rgba(255,255,255,0.2); color:white; font-size:11px; padding:3px 8px; border-radius:4px; }
+        .ml-body { padding:20px 24px; }
+        .ml-prediction { font-size:18px; font-weight:bold; color:#1565c0; margin-bottom:12px; }
+        .ml-confidence { font-size:13px; color:#78909c; margin-bottom:16px; }
+        .confidence-bar { height:8px; background:#e3f2fd; border-radius:4px; overflow:hidden; margin-bottom:16px; }
+        .confidence-fill { height:100%; background:#1565c0; border-radius:4px; transition:width 0.5s; }
+        .ml-top3 { display:flex; gap:10px; flex-wrap:wrap; }
+        .ml-top3-item { padding:6px 14px; background:#e3f2fd; border-radius:20px; font-size:12px; color:#1565c0; font-weight:bold; }
+
+        /* AI Response */
+        .ai-card { background:white; border:1.5px solid #2e7d32; border-radius:12px; margin-bottom:20px; overflow:hidden; }
+        .ai-header { background:#2e7d32; padding:14px 24px; display:flex; align-items:center; gap:10px; }
+        .ai-header h3 { color:white; font-size:15px; }
+        .ai-header span { background:rgba(255,255,255,0.2); color:white; font-size:11px; padding:3px 8px; border-radius:4px; }
+        .ai-body { padding:22px 24px; font-size:15px; color:#37474f; line-height:1.8; white-space:pre-wrap; }
+
+        /* DB Results */
+        .results-label { font-size:13px; font-weight:bold; color:#78909c; letter-spacing:1px; text-transform:uppercase; margin-bottom:16px; }
+        .symptom-card { background:white; border:1px solid #e0e0e0; border-radius:10px; margin-bottom:18px; overflow:hidden; }
+        .symptom-card-header { padding:16px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f0f0f0; }
+        .symptom-card-header h3 { font-size:17px; color:#1b4332; }
+        .urgency-badge { font-size:12px; font-weight:bold; padding:5px 12px; border-radius:20px; }
+        .symptom-card-body { padding:18px 22px; }
+        .symptom-row { margin-bottom:14px; }
+        .symptom-row-label { font-size:12px; font-weight:bold; color:#78909c; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+        .symptom-row-value { font-size:14px; color:#37474f; line-height:1.6; }
+        .no-results { text-align:center; padding:40px; color:#78909c; background:white; border-radius:10px; border:1px solid #e0e0e0; }
+        .lang-switcher-links { display:flex; align-items:center; gap:6px; }
+        .lang-link { padding:6px 10px; border:1.5px solid #ddd; border-radius:6px; color:#607d8b; font-size:12px; font-weight:bold; text-decoration:none; transition:all 0.2s; }
+        .lang-link:hover { border-color:#2e7d32; color:#2e7d32; }
+        .lang-active { background:#2e7d32; color:white !important; border-color:#2e7d32; }
+        @media (max-width:768px) {
+            .input-row { flex-direction:column; }
+            .symptom-card-header { flex-direction:column; align-items:flex-start; gap:8px; }
         }
     </style>
 </head>
@@ -278,21 +203,18 @@ function urgency_style($urgency) {
 
     <div class="page-banner">
         <h1>🩺 Symptom Guidance</h1>
-        <p>Describe your symptoms and get health guidance based on WHO and Kenya Ministry of Health guidelines.</p>
+        <p>Describe your symptoms and get AI-powered health guidance based on WHO and Kenya Ministry of Health guidelines.</p>
     </div>
 
     <div class="symptom-section">
 
         <div class="search-card">
             <h2>What symptoms are you experiencing?</h2>
-            <p>Type your symptom or health question below.</p>
+            <p>Type your symptom or health question below. You can write in English or Kiswahili.</p>
 
             <form method="POST" action="index.php" id="symptom-form">
                 <div class="input-row">
-                    <input
-                        type="text"
-                        name="symptom_input"
-                        id="symptom-input"
+                    <input type="text" name="symptom_input" id="symptom-input"
                         placeholder="e.g. My child has fever and vomiting..."
                         value="<?= htmlspecialchars($user_input) ?>"
                         autocomplete="off">
@@ -323,6 +245,37 @@ function urgency_style($urgency) {
 
         <?php if ($search_done && !$error): ?>
 
+            <!-- ML Classification Result -->
+            <?php if ($ml_result): ?>
+            <div class="ml-card">
+                <div class="ml-header">
+                    <h3>🧠 ML Symptom Classifier</h3>
+                    <span class="ml-badge">TF-IDF + Naive Bayes</span>
+                </div>
+                <div class="ml-body">
+                    <p class="ml-prediction">
+                        Identified: <?= htmlspecialchars(ucwords(str_replace('_', ' ', $ml_result['predicted']))) ?>
+                    </p>
+                    <p class="ml-confidence">Confidence: <?= $ml_result['confidence'] ?>%</p>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width:<?= $ml_result['confidence'] ?>%"></div>
+                    </div>
+                    <?php if (!empty($ml_result['top_3'])): ?>
+                    <p style="font-size:13px;color:#78909c;margin-bottom:8px;">Top predictions:</p>
+                    <div class="ml-top3">
+                        <?php foreach ($ml_result['top_3'] as $pred): ?>
+                            <span class="ml-top3-item">
+                                <?= htmlspecialchars(ucwords(str_replace('_', ' ', $pred['symptom']))) ?>
+                                (<?= $pred['confidence'] ?>%)
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Groq AI Response -->
             <?php if ($ai_response): ?>
             <div class="ai-card">
                 <div class="ai-header">
@@ -332,11 +285,12 @@ function urgency_style($urgency) {
                 <div class="ai-body"><?= htmlspecialchars($ai_response) ?></div>
             </div>
             <?php else: ?>
-            <div class="alert alert-error" style="margin-bottom:24px;">
-                AI assistant is currently unavailable. Showing database results only.
+            <div class="alert alert-error" style="margin-bottom:20px;">
+                AI assistant unavailable. Showing database results only.
             </div>
             <?php endif; ?>
 
+            <!-- Database Results -->
             <?php if (!empty($db_results)): ?>
                 <p class="results-label">📋 Related guidance from our database</p>
                 <?php foreach ($db_results as $entry):
@@ -368,7 +322,7 @@ function urgency_style($urgency) {
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="no-results">
-                    <p>No specific database entry found for that symptom.</p>
+                    <p>No specific database entry found.</p>
                     <p>Please refer to the AI response above or visit your nearest health facility.</p>
                 </div>
             <?php endif; ?>
