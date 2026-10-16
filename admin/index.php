@@ -212,7 +212,7 @@ body {
 /* ── Quick-action cards ── */
 .admin-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem; margin-bottom: 2.5rem;
 }
 .admin-card {
@@ -298,7 +298,7 @@ footer {
 
 /* ── Responsive ── */
 @media (max-width: 1000px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 700px) {
+@media (max-width: 600px) {
     .admin-grid { grid-template-columns: 1fr; }
     .admin-table thead th:nth-child(2),
     .admin-table tbody td:nth-child(2) { display: none; }
@@ -318,15 +318,14 @@ footer {
     <nav class="nav-links">
         <a href="index.php">Dashboard</a>
         <a href="users.php">Users</a>
-        <a href="content.php">Health Content</a>
-        <a href="myths.php">Myth vs Fact</a>
-        <a href="symptoms.php">Symptoms</a>
+        <a href="content.php">Manage Content</a>
         <a href="suggestions.php" style="position:relative;">
             Suggestions
             <?php if ($pending_suggestions > 0): ?>
                 <span class="nav-badge"><?= $pending_suggestions ?></span>
             <?php endif; ?>
         </a>
+        <a href="../health/index.php">View Platform</a>
         <a href="../auth/logout.php" class="nav-logout">Logout</a>
     </nav>
 </header>
@@ -412,32 +411,12 @@ footer {
         <a href="content.php" class="admin-card">
             <div class="admin-card-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5c6bc0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
             </div>
-            <h3>Health Content</h3>
-            <p>Add, edit, or delete health education articles.</p>
-        </a>
-        <a href="myths.php" class="admin-card">
-            <div class="admin-card-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5c6bc0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="8" y1="15" x2="16" y2="15"/>
-                    <line x1="9" y1="9" x2="9.01" y2="9"/>
-                    <line x1="15" y1="9" x2="15.01" y2="9"/>
-                </svg>
-            </div>
-            <h3>Myth vs Fact</h3>
-            <p>Manage myth and fact entries for community health misconceptions.</p>
-        </a>
-        <a href="symptoms.php" class="admin-card">
-            <div class="admin-card-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5c6bc0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-            </div>
-            <h3>Symptom Guidance</h3>
-            <p>Add and update symptom guidance entries.</p>
+            <h3>Manage Content</h3>
+            <p>Add, edit, or remove health articles, myth entries, and symptom guidance.</p>
         </a>
         <a href="suggestions.php" class="admin-card">
             <div class="admin-card-icon">

@@ -268,10 +268,9 @@ footer {
     <nav class="nav-links">
         <a href="index.php">Dashboard</a>
         <a href="users.php">Users</a>
-        <a href="content.php">Health Content</a>
-        <a href="myths.php">Myth vs Fact</a>
-        <a href="symptoms.php">Symptoms</a>
+        <a href="content.php">Manage Content</a>
         <a href="suggestions.php">Suggestions</a>
+        <a href="../health/index.php">View Platform</a>
         <a href="../auth/logout.php" class="nav-logout">Logout</a>
     </nav>
 </header>
