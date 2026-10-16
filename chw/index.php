@@ -38,215 +38,432 @@ $my_suggestions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHW Dashboard — Samburu Health</title>
-    <link rel="stylesheet" href="/multilingual-health-platform/assets/css/style.css">
-    <style>
-        .chw-banner {
-            background: #1b5e20;
-            padding: 50px 7%;
-            color: white;
-        }
-        .chw-banner h1 { font-size: 32px; color: white; margin-bottom: 8px; }
-        .chw-banner p  { color: #c8e6c9; font-size: 15px; }
-        .chw-section   { padding: 50px 7%; }
-        .chw-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .chw-card {
-            display: block;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 28px 20px;
-            text-decoration: none;
-            color: #263238;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        .chw-card:hover {
-            border-color: #2e7d32;
-            box-shadow: 0 4px 16px rgba(46,125,50,0.1);
-            transform: translateY(-2px);
-        }
-        .chw-card-icon { font-size: 32px; margin-bottom: 12px; }
-        .chw-card h3   { font-size: 15px; color: #1b4332; margin-bottom: 6px; }
-        .chw-card p    { font-size: 13px; color: #607d8b; line-height: 1.5; }
-        .section-title {
-            font-size: 18px;
-            color: #1b5e20;
-            font-weight: bold;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e8f5e9;
-        }
-        .suggest-form {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 28px;
-            margin-bottom: 36px;
-        }
-        .suggest-form h3 { font-size: 17px; color: #1b4332; margin-bottom: 6px; }
-        .suggest-form p  { font-size: 14px; color: #78909c; margin-bottom: 20px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .suggestions-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid #e0e0e0;
-        }
-        .suggestions-table th {
-            background: #e8f5e9;
-            color: #1b5e20;
-            padding: 12px 16px;
-            text-align: left;
-            font-size: 13px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .suggestions-table td {
-            padding: 12px 16px;
-            font-size: 14px;
-            color: #37474f;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .suggestions-table tr:last-child td { border-bottom: none; }
-        .status-badge { padding: 4px 12px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-        .status-pending  { background: #fff3e0; color: #e65100; }
-        .status-approved { background: #e8f5e9; color: #2e7d32; }
-        .status-rejected { background: #ffebee; color: #c62828; }
-        .navbar-chw { background: #1b5e20 !important; }
-        .navbar-chw .logo { color: #c8e6c9 !important; }
-        .navbar-chw nav a { color: rgba(255,255,255,0.7) !important; }
-        .navbar-chw nav a:hover { color: white !important; }
-        .navbar-chw .nav-login { border-color: rgba(255,255,255,0.5) !important; color: white !important; }
-        .lang-switcher-links { display: flex; align-items: center; gap: 6px; }
-        .lang-link {
-            padding: 6px 10px;
-            border: 1.5px solid rgba(255,255,255,0.3);
-            border-radius: 6px;
-            color: rgba(255,255,255,0.7);
-            font-size: 12px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        .lang-link:hover { background: rgba(255,255,255,0.1); color: white; }
-        .lang-active { background: rgba(255,255,255,0.2); color: white !important; }
-        @media (max-width: 768px) {
-            .chw-grid  { grid-template-columns: repeat(2, 1fr); }
-            .form-row  { grid-template-columns: 1fr; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHW Dashboard — Samburu Health</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ── Design tokens ── */
+:root {
+    --green-deep:  #1a3d2b;
+    --green-mid:   #2d6a4f;
+    --green-light: #52b788;
+    --cream:       #f8f4ec;
+    --cream-dark:  #ede8dc;
+    --gold:        #c9913d;
+    --gold-light:  #e8b96a;
+    --ink:         #0e1a13;
+    --white:       #ffffff;
+    --text-body:   #2c3e2d;
+    --text-muted:  #6b7c6d;
+    --border:      #d4cfc5;
+
+    --bg:      var(--cream);
+    --surface: var(--white);
+    --fg:      var(--text-body);
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0d1f14; --surface: #152a1e; --fg: #e8f0e9;
+        --text-muted: #8fa892; --border: #2a4035;
+        color-scheme: dark;
+    }
+}
+:root[data-theme="dark"] {
+    --bg: #0d1f14; --surface: #152a1e; --fg: #e8f0e9;
+    --text-muted: #8fa892; --border: #2a4035;
+    color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg); color: var(--fg);
+    min-height: 100vh; display: flex; flex-direction: column;
+}
+
+/* ── Navbar ── */
+.navbar {
+    position: sticky; top: 0; z-index: 200;
+    background: var(--green-deep);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 clamp(1rem, 5vw, 3rem); height: 64px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+}
+.logo {
+    font-family: 'Lora', serif; font-size: 1.1rem; font-weight: 700;
+    color: var(--white); display: flex; align-items: center; gap: 10px;
+    text-decoration: none; flex-shrink: 0;
+}
+.chw-role-pill {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 20px;
+    background: var(--green-light); color: var(--green-deep);
+}
+.nav-links { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+.nav-links a {
+    color: rgba(255,255,255,0.82); text-decoration: none;
+    font-size: 0.83rem; font-weight: 500; white-space: nowrap; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-logout {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);
+    color: var(--white) !important; padding: 5px 14px; border-radius: 6px; font-weight: 600 !important;
+}
+.nav-logout:hover { background: rgba(255,255,255,0.2) !important; }
+.lang-switcher { display: flex; align-items: center; gap: 4px; }
+.lang-btn {
+    padding: 4px 10px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.78); font-size: 0.75rem; font-weight: 600;
+    text-decoration: none; transition: all 0.2s; white-space: nowrap;
+}
+.lang-btn:hover  { border-color: rgba(255,255,255,0.6); color: var(--white); }
+.lang-btn.active { background: var(--green-light); border-color: var(--green-light); color: var(--green-deep); }
+
+/* ── Hero ── */
+.page-hero {
+    background: linear-gradient(135deg, var(--green-deep) 0%, var(--green-mid) 60%, #40916c 100%);
+    padding: 3rem clamp(1.5rem, 7%, 5rem); position: relative; overflow: hidden;
+}
+.page-hero::before {
+    content: ''; position: absolute;
+    width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(82,183,136,0.14), transparent 65%);
+    top: -100px; right: -60px; pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 1; }
+.hero-eyebrow {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--green-light); margin-bottom: 0.5rem;
+}
+.page-hero h1 {
+    font-family: 'Lora', serif;
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    font-weight: 700; color: var(--white); line-height: 1.25; margin-bottom: 0.5rem;
+}
+.page-hero p { font-size: 0.9rem; color: rgba(255,255,255,0.78); }
+
+/* ── Main content ── */
+.content-wrap { flex: 1; padding: 2.5rem clamp(1.5rem, 7%, 5rem); }
+
+/* ── Section header ── */
+.section-header {
+    font-family: 'Lora', serif; font-size: 1.1rem; font-weight: 700;
+    color: var(--green-deep); margin-bottom: 1.1rem;
+    padding-bottom: 0.6rem; border-bottom: 2px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .section-header { color: var(--green-light); }
+}
+:root[data-theme="dark"] .section-header { color: var(--green-light); }
+
+/* ── Quick-access cards ── */
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem; margin-bottom: 2.5rem;
+}
+.resource-card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 1.5rem 1.1rem;
+    text-decoration: none; color: inherit;
+    text-align: center;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+}
+.resource-card:hover {
+    border-color: var(--green-mid);
+    box-shadow: 0 6px 20px rgba(45,106,79,0.13);
+    transform: translateY(-3px);
+}
+.resource-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(45,106,79,0.12), rgba(82,183,136,0.15));
+    display: flex; align-items: center; justify-content: center;
+}
+.resource-card h3 {
+    font-size: 0.9rem; font-weight: 600; color: var(--green-deep); margin: 0;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .resource-card h3 { color: var(--green-light); }
+}
+:root[data-theme="dark"] .resource-card h3 { color: var(--green-light); }
+.resource-card p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+
+/* ── Alerts ── */
+.alert {
+    padding: 0.8rem 1rem; border-radius: 8px;
+    font-size: 0.875rem; margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 8px;
+}
+.alert-success {
+    background: #f0fff6; border: 1px solid #a3e4c0; color: #1a7c4a;
+}
+.alert-error {
+    background: #fff0f3; border: 1px solid #f4b8c4; color: #b5294a;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .alert-success { background: #0e2418; border-color: #1a5430; }
+    :root:not([data-theme="light"]) .alert-error   { background: #2a0e16; border-color: #5a2030; }
+}
+:root[data-theme="dark"] .alert-success { background: #0e2418; border-color: #1a5430; }
+:root[data-theme="dark"] .alert-error   { background: #2a0e16; border-color: #5a2030; }
+
+/* ── Suggestion form ── */
+.suggest-card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 16px; padding: 2rem; margin-bottom: 2.5rem;
+}
+.suggest-card h3 {
+    font-family: 'Lora', serif; font-size: 1.05rem; font-weight: 700;
+    color: var(--green-deep); margin-bottom: 0.3rem;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .suggest-card h3 { color: var(--green-light); }
+}
+:root[data-theme="dark"] .suggest-card h3 { color: var(--green-light); }
+.suggest-card > p { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 1.35rem; line-height: 1.6; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label {
+    font-size: 0.8rem; font-weight: 600; color: var(--fg);
+}
+.required { color: #b5294a; }
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 0.7rem 0.9rem;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-family: 'Poppins', sans-serif; font-size: 0.875rem;
+    background: var(--bg); color: var(--fg);
+    outline: none; transition: border-color 0.2s;
+    width: 100%;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: var(--green-mid); }
+.form-group textarea { resize: vertical; min-height: 110px; }
+
+.btn-submit {
+    padding: 0.75rem 1.75rem; background: var(--green-mid); color: var(--white);
+    border: none; border-radius: 8px;
+    font-family: 'Poppins', sans-serif; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s; margin-top: 0.5rem;
+}
+.btn-submit:hover { background: var(--green-deep); }
+
+/* ── Suggestions table ── */
+.table-wrap {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+}
+.suggestions-table { width: 100%; border-collapse: collapse; }
+.suggestions-table thead th {
+    background: rgba(45,106,79,0.08);
+    color: var(--text-muted); padding: 0.75rem 1.1rem;
+    text-align: left; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+}
+.suggestions-table tbody td {
+    padding: 0.85rem 1.1rem; font-size: 0.85rem; color: var(--fg);
+    border-bottom: 1px solid var(--border);
+}
+.suggestions-table tbody tr:last-child td { border-bottom: none; }
+.suggestions-table tbody tr:hover { background: rgba(45,106,79,0.04); }
+
+.status-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 700;
+}
+.status-pending  { background: #fff7ed; color: #b56a00; }
+.status-approved { background: #f0fff6; color: #1a7c4a; }
+.status-rejected { background: #fff0f3; color: #b5294a; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .status-pending  { background: #2a1800; }
+    :root:not([data-theme="light"]) .status-approved { background: #0e2418; }
+    :root:not([data-theme="light"]) .status-rejected { background: #2a0e16; }
+}
+:root[data-theme="dark"] .status-pending  { background: #2a1800; }
+:root[data-theme="dark"] .status-approved { background: #0e2418; }
+:root[data-theme="dark"] .status-rejected { background: #2a0e16; }
+
+.no-suggestions {
+    padding: 2.5rem; text-align: center;
+    font-size: 0.875rem; color: var(--text-muted);
+}
+
+/* ── Footer ── */
+footer {
+    background: var(--ink); color: rgba(255,255,255,0.65);
+    text-align: center; padding: 1.25rem 1rem;
+    font-size: 0.8rem; line-height: 1.8;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) { .resource-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) {
+    .resource-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-row { grid-template-columns: 1fr; }
+    .suggestions-table thead th:nth-child(2),
+    .suggestions-table tbody td:nth-child(2) { display: none; }
+}
+</style>
 </head>
 <body>
 
-    <header class="navbar navbar-chw">
-        <div class="logo">Samburu Health — CHW</div>
-        <nav>
-            <a href="index.php">Dashboard</a>
-            <a href="../health/index.php">Health Education</a>
-            <a href="../myth/index.php">Myth vs Fact</a>
-            <a href="../symptom/index.php">Symptom Guidance</a>
-            <div class="lang-switcher-links">
-                <a href="../dashboard/language.php?lang=english&redirect=../chw/index.php"
-                   class="lang-link <?= $lang === 'english'   ? 'lang-active' : '' ?>">🌍 EN</a>
-                <a href="../dashboard/language.php?lang=kiswahili&redirect=../chw/index.php"
-                   class="lang-link <?= $lang === 'kiswahili' ? 'lang-active' : '' ?>">🇰🇪 SW</a>
-                <a href="../dashboard/language.php?lang=maa&redirect=../chw/index.php"
-                   class="lang-link <?= $lang === 'maa'       ? 'lang-active' : '' ?>">🐄 MAA</a>
-            </div>
-            <a href="../auth/logout.php" class="nav-login">Logout</a>
-        </nav>
-    </header>
+<header class="navbar">
+    <a href="index.php" class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#52b788" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Samburu Health
+        <span class="chw-role-pill">CHW</span>
+    </a>
+    <nav class="nav-links">
+        <a href="index.php">Dashboard</a>
+        <a href="../health/index.php">Health Education</a>
+        <a href="../myth/index.php">Myth vs Fact</a>
+        <a href="../symptom/index.php">Symptoms</a>
+        <div class="lang-switcher">
+            <a href="../dashboard/language.php?lang=english&redirect=<?= urlencode('../chw/index.php') ?>"
+               class="lang-btn <?= $lang === 'english'   ? 'active' : '' ?>">EN</a>
+            <a href="../dashboard/language.php?lang=kiswahili&redirect=<?= urlencode('../chw/index.php') ?>"
+               class="lang-btn <?= $lang === 'kiswahili' ? 'active' : '' ?>">SW</a>
+            <a href="../dashboard/language.php?lang=maa&redirect=<?= urlencode('../chw/index.php') ?>"
+               class="lang-btn <?= $lang === 'maa'       ? 'active' : '' ?>">MAA</a>
+        </div>
+        <a href="../auth/logout.php" class="nav-logout">Logout</a>
+    </nav>
+</header>
 
-    <div class="chw-banner">
-        <h1>🏥 Community Health Worker Dashboard</h1>
-        <p>Welcome back, <?= htmlspecialchars($full_name) ?>. Access health resources and submit content suggestions.</p>
+<!-- Hero -->
+<div class="page-hero">
+    <div class="hero-inner">
+        <p class="hero-eyebrow">Community Health Worker Portal</p>
+        <h1>Welcome back, <?= htmlspecialchars($full_name) ?></h1>
+        <p>Access health resources and submit content suggestions based on your community visits.</p>
+    </div>
+</div>
+
+<div class="content-wrap">
+
+    <!-- Resource cards -->
+    <p class="section-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        Health Resources
+    </p>
+    <div class="resource-grid">
+        <a href="../health/index.php" class="resource-card">
+            <div class="resource-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+            </div>
+            <h3>Health Education</h3>
+            <p>Access and share health education articles with community members.</p>
+        </a>
+        <a href="../myth/index.php" class="resource-card">
+            <div class="resource-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/>
+                </svg>
+            </div>
+            <h3>Myth vs Fact</h3>
+            <p>Reference myth corrections during community health visits.</p>
+        </a>
+        <a href="../symptom/index.php" class="resource-card">
+            <div class="resource-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+            </div>
+            <h3>Symptom Guidance</h3>
+            <p>Use symptom guidance to support community members.</p>
+        </a>
+        <a href="#suggest" class="resource-card">
+            <div class="resource-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
+            <h3>Submit Suggestion</h3>
+            <p>Suggest new health content based on community needs.</p>
+        </a>
     </div>
 
-    <div class="chw-section">
-
-        <!-- Quick Access -->
-        <p class="section-title">Health Resources</p>
-        <div class="chw-grid">
-            <a href="../health/index.php" class="chw-card">
-                <div class="chw-card-icon">📚</div>
-                <h3>Health Education</h3>
-                <p>Access and share health education articles with community members.</p>
-            </a>
-            <a href="../myth/index.php" class="chw-card">
-                <div class="chw-card-icon">⚖️</div>
-                <h3>Myth vs Fact</h3>
-                <p>Reference myth corrections during community health visits.</p>
-            </a>
-            <a href="../symptom/index.php" class="chw-card">
-                <div class="chw-card-icon">🩺</div>
-                <h3>Symptom Guidance</h3>
-                <p>Use symptom guidance to support community members.</p>
-            </a>
-            <a href="#suggest" class="chw-card">
-                <div class="chw-card-icon">💬</div>
-                <h3>Submit Suggestion</h3>
-                <p>Suggest new health content based on community needs.</p>
-            </a>
+    <!-- Alerts -->
+    <?php if ($success): ?>
+        <div class="alert alert-success">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+            <?= htmlspecialchars($success) ?>
         </div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+        <div class="alert alert-error">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <?= htmlspecialchars($error) ?>
+        </div>
+    <?php endif; ?>
 
-        <?php if ($success): ?>
-            <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-        <?php endif; ?>
-        <?php if ($error): ?>
-            <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
+    <!-- Submit suggestion -->
+    <div class="suggest-card" id="suggest">
+        <h3>Submit a Content Suggestion</h3>
+        <p>Based on your community visits, suggest health topics or corrections that would help your community. All suggestions go to the admin for review.</p>
 
-        <!-- Submit Suggestion -->
-        <div class="suggest-form" id="suggest">
-            <h3>💬 Submit a Content Suggestion</h3>
-            <p>Based on your community visits, suggest health topics or corrections that would help your community.</p>
-
-            <form method="POST" action="">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Suggestion Title <span class="required">*</span></label>
-                        <input type="text" name="title" placeholder="e.g. Add content about snakebite first aid" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select name="category">
-                            <option value="">Select category</option>
-                            <option value="maternal">Maternal Health</option>
-                            <option value="child">Child Health</option>
-                            <option value="disease">Common Diseases</option>
-                            <option value="myth">Myth vs Fact</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
+        <form method="POST" action="">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Suggestion Title <span class="required">*</span></label>
+                    <input type="text" name="title"
+                        placeholder="e.g. Add content about snakebite first aid" required>
                 </div>
                 <div class="form-group">
-                    <label>Details <span class="required">*</span></label>
-                    <textarea name="content" rows="5"
-                        style="width:100%;padding:12px 14px;border:1.5px solid #cfd8dc;border-radius:6px;font-size:15px;resize:vertical;"
-                        placeholder="Describe what content you would like added or changed, and why it would help your community..."
-                        required></textarea>
+                    <label>Category</label>
+                    <select name="category">
+                        <option value="">Select category</option>
+                        <option value="maternal">Maternal Health</option>
+                        <option value="child">Child Health</option>
+                        <option value="disease">Common Diseases</option>
+                        <option value="myth">Myth vs Fact</option>
+                        <option value="other">Other</option>
+                    </select>
                 </div>
-                <button type="submit" name="submit_suggestion" class="btn primary-btn">
-                    Submit Suggestion
-                </button>
-            </form>
-        </div>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label>Details <span class="required">*</span></label>
+                <textarea name="content" rows="5"
+                    placeholder="Describe what content you would like added or changed, and why it would help your community…"
+                    required></textarea>
+            </div>
+            <button type="submit" name="submit_suggestion" class="btn-submit">Submit Suggestion</button>
+        </form>
+    </div>
 
-        <!-- My Suggestions -->
-        <p class="section-title">My Submitted Suggestions</p>
-        <?php if (empty($my_suggestions)): ?>
-            <p style="color:#78909c;font-size:14px;">You have not submitted any suggestions yet.</p>
-        <?php else: ?>
+    <!-- My suggestions -->
+    <p class="section-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        My Submitted Suggestions
+    </p>
+
+    <?php if (empty($my_suggestions)): ?>
+        <div class="table-wrap">
+            <div class="no-suggestions">You have not submitted any suggestions yet.</div>
+        </div>
+    <?php else: ?>
+        <div class="table-wrap">
             <table class="suggestions-table">
                 <thead>
                     <tr>
@@ -258,27 +475,28 @@ $my_suggestions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 </thead>
                 <tbody>
                     <?php foreach ($my_suggestions as $s): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($s['title']) ?></td>
-                        <td><?= $s['category'] ? ucfirst($s['category']) : '—' ?></td>
-                        <td>
-                            <span class="status-badge status-<?= $s['status'] ?>">
-                                <?= ucfirst($s['status']) ?>
-                            </span>
-                        </td>
-                        <td><?= date('d M Y', strtotime($s['created_at'])) ?></td>
-                    </tr>
+                        <tr>
+                            <td><?= htmlspecialchars($s['title']) ?></td>
+                            <td><?= $s['category'] ? htmlspecialchars(ucfirst($s['category'])) : '—' ?></td>
+                            <td>
+                                <span class="status-badge status-<?= htmlspecialchars($s['status']) ?>">
+                                    <?= htmlspecialchars(ucfirst($s['status'])) ?>
+                                </span>
+                            </td>
+                            <td><?= date('d M Y', strtotime($s['created_at'])) ?></td>
+                        </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        <?php endif; ?>
+        </div>
+    <?php endif; ?>
 
-    </div>
+</div>
 
-    <footer>
-        <p>© 2026 Samburu Health Platform</p>
-        <p>Community Health Worker Portal</p>
-    </footer>
+<footer>
+    <p>© 2026 Samburu Health Platform</p>
+    <p>Community Health Worker Portal</p>
+</footer>
 
 </body>
 </html>
