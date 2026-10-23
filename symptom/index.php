@@ -447,6 +447,7 @@ footer {
 </style>
 </head>
 <body>
+<?php include '../admin/_back_strip.php'; ?>
 
 <header class="navbar">
     <a href="../dashboard/index.php" class="logo">
