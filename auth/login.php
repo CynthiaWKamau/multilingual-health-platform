@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($email) || empty($password)) {
         $error = 'Please enter your email and password.';
     } else {
-        $stmt = $conn->prepare("SELECT id, full_name, password, role FROM users WHERE email = ?");
+        $stmt = $conn->prepare("SELECT id, full_name, password, role, preferred_language FROM users WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $stmt->store_result();
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->num_rows === 0) {
             $error = 'No account found with that email address.';
         } else {
-            $stmt->bind_result($id, $full_name, $hashed, $role);
+            $stmt->bind_result($id, $full_name, $hashed, $role, $preferred_language);
             $stmt->fetch();
 
             if (!password_verify($password, $hashed)) {
@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id']   = $id;
                 $_SESSION['full_name'] = $full_name;
                 $_SESSION['role']      = $role;
+                $_SESSION['language']  = $preferred_language ?: 'english';
 
                 if ($role === 'admin') {
                     header("Location: ../admin/index.php");
@@ -267,7 +268,6 @@ body {
     margin-bottom: 0.35rem;
 }
 
-/* override for dark mode heading */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .auth-card h2 { color: var(--green-light); }
 }
@@ -407,7 +407,6 @@ footer {
 
 <header class="navbar">
     <a href="../index.php" class="logo">
-        <!-- Heartbeat / health icon -->
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#52b788" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
         </svg>
@@ -433,7 +432,6 @@ footer {
         </div>
 
         <div class="panel-illus">
-            <!-- Medical cross icon -->
             <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 2a5 5 0 1 1 0 10A5 5 0 0 1 12 2z"/>
                 <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>

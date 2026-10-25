@@ -11,6 +11,40 @@ $user_id   = $_SESSION['user_id'];
 $full_name = $_SESSION['full_name'];
 $role      = $_SESSION['role'];
 $language  = $_SESSION['language'] ?? 'english';
+
+// ── Live stats ────────────────────────────────────────────────────────────────
+function db_count($conn, $table) {
+    $r = $conn->query("SELECT COUNT(*) AS n FROM `$table`");
+    return ($r && $row = $r->fetch_assoc()) ? (int)$row['n'] : 0;
+}
+$stat_articles = db_count($conn, 'health_education');
+$stat_myths    = db_count($conn, 'myth_facts');
+$stat_symptoms = db_count($conn, 'symptom_guidance');
+
+// ── Recent articles ───────────────────────────────────────────────────────────
+$recent_arts = [];
+$ra = $conn->query(
+    "SELECT id, title, title_sw, title_maa, category, created_at
+     FROM health_education
+     ORDER BY created_at DESC
+     LIMIT 3"
+);
+if ($ra) $recent_arts = $ra->fetch_all(MYSQLI_ASSOC);
+
+function art_title($a, $lang) {
+    if ($lang === 'kiswahili' && !empty($a['title_sw'])) return $a['title_sw'];
+    if ($lang === 'maa'       && !empty($a['title_maa'])) return $a['title_maa'];
+    return $a['title'];
+}
+
+$cat_color = [
+    'maternal'  => '#b5446e',
+    'child'     => '#1a5ca8',
+    'disease'   => '#c45c10',
+    'nutrition' => '#2d7d46',
+];
+
+$lang_label = ['english' => 'English', 'kiswahili' => 'Kiswahili', 'maa' => 'Maa'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -39,179 +73,156 @@ $language  = $_SESSION['language'] ?? 'english';
     --text-muted:  #6b7c6d;
     --border:      #d4cfc5;
     --card-shadow: 0 2px 16px rgba(26,61,43,0.08);
-
     --bg:      var(--cream);
     --surface: var(--white);
     --fg:      var(--text-body);
 }
-
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-        --bg:        #0d1f14;
-        --surface:   #152a1e;
-        --fg:        #e8f0e9;
-        --text-muted:#8fa892;
-        --border:    #2a4035;
-        --cream-dark:#1a2e22;
+        --bg: #0d1f14; --surface: #152a1e; --fg: #e8f0e9;
+        --text-muted: #8fa892; --border: #2a4035;
+        --cream-dark: #1a2e22;
         --card-shadow: 0 2px 16px rgba(0,0,0,0.35);
         color-scheme: dark;
     }
 }
 :root[data-theme="dark"] {
-    --bg:        #0d1f14;
-    --surface:   #152a1e;
-    --fg:        #e8f0e9;
-    --text-muted:#8fa892;
-    --border:    #2a4035;
-    --cream-dark:#1a2e22;
+    --bg: #0d1f14; --surface: #152a1e; --fg: #e8f0e9;
+    --text-muted: #8fa892; --border: #2a4035;
+    --cream-dark: #1a2e22;
     --card-shadow: 0 2px 16px rgba(0,0,0,0.35);
     color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
     font-family: 'Poppins', sans-serif;
-    background: var(--bg);
-    color: var(--fg);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    background: var(--bg); color: var(--fg);
+    min-height: 100vh; display: flex; flex-direction: column;
 }
 
 /* ── Navbar ── */
 .navbar {
-    position: sticky; top: 0; z-index: 100;
+    position: sticky; top: 0; z-index: 200;
     background: var(--green-deep);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 clamp(1rem, 5vw, 3rem);
-    height: 64px;
+    padding: 0 clamp(1rem, 5vw, 3rem); height: 64px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.25);
 }
 .logo {
-    font-family: 'Lora', serif;
-    font-size: 1.2rem; font-weight: 700;
-    color: var(--white);
-    display: flex; align-items: center; gap: 10px;
-    text-decoration: none;
+    font-family: 'Lora', serif; font-size: 1.2rem; font-weight: 700;
+    color: var(--white); display: flex; align-items: center; gap: 10px;
+    text-decoration: none; flex-shrink: 0;
 }
-.nav-links { display: flex; align-items: center; gap: 1.25rem; }
+.nav-links { display: flex; align-items: center; gap: 1.1rem; }
 .nav-links a {
-    color: rgba(255,255,255,0.82);
-    text-decoration: none;
-    font-size: 0.85rem; font-weight: 500;
-    transition: color 0.2s;
+    color: rgba(255,255,255,0.82); text-decoration: none;
+    font-size: 0.83rem; font-weight: 500; white-space: nowrap; transition: color 0.2s;
 }
 .nav-links a:hover { color: var(--white); }
 .nav-logout {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.22);
-    color: var(--white) !important;
-    padding: 6px 16px;
-    border-radius: 6px;
-    font-weight: 600 !important;
-    transition: background 0.2s !important;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);
+    color: var(--white) !important; padding: 5px 14px; border-radius: 6px; font-weight: 600 !important;
 }
 .nav-logout:hover { background: rgba(255,255,255,0.2) !important; }
 
-/* ── Hero banner ── */
+/* ── Hero ── */
 .hero {
     background: linear-gradient(135deg, var(--green-deep) 0%, var(--green-mid) 60%, #40916c 100%);
     padding: 3.5rem clamp(1.5rem, 7%, 5rem);
     position: relative; overflow: hidden;
 }
 .hero::before {
-    content: '';
-    position: absolute;
+    content: ''; position: absolute;
     width: 500px; height: 500px; border-radius: 50%;
     background: radial-gradient(circle, rgba(82,183,136,0.15), transparent 65%);
-    top: -120px; right: -80px;
-    pointer-events: none;
+    top: -120px; right: -80px; pointer-events: none;
 }
 .hero::after {
-    content: '';
-    position: absolute;
+    content: ''; position: absolute;
     width: 320px; height: 320px; border-radius: 50%;
     background: radial-gradient(circle, rgba(201,145,61,0.1), transparent 65%);
-    bottom: -80px; left: 10%;
-    pointer-events: none;
+    bottom: -80px; left: 10%; pointer-events: none;
 }
-.hero-inner {
-    position: relative; z-index: 1;
-    max-width: 700px;
-}
+.hero-inner { position: relative; z-index: 1; max-width: 700px; }
 .hero-eyebrow {
-    font-size: 0.72rem; font-weight: 700;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--green-light);
-    margin-bottom: 0.6rem;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--green-light); margin-bottom: 0.6rem;
 }
 .hero h1 {
     font-family: 'Lora', serif;
     font-size: clamp(1.75rem, 4vw, 2.6rem);
-    font-weight: 700;
-    color: var(--white);
-    line-height: 1.25;
-    margin-bottom: 0.75rem;
+    font-weight: 700; color: var(--white); line-height: 1.25; margin-bottom: 0.75rem;
 }
-.hero-sub {
-    font-size: 1rem; color: rgba(255,255,255,0.78);
-    line-height: 1.7; max-width: 520px;
+.hero-sub { font-size: 1rem; color: rgba(255,255,255,0.78); line-height: 1.7; max-width: 520px; }
+
+/* Language switcher in hero */
+.hero-lang {
+    display: flex; align-items: center; gap: 8px; margin-top: 1.4rem; flex-wrap: wrap;
 }
-.hero-lang-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.92);
-    font-size: 0.8rem; font-weight: 500;
+.hero-lang-label {
+    font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 500;
+}
+.hlang-btn {
     padding: 5px 14px; border-radius: 20px;
-    margin-top: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.78); font-size: 0.78rem; font-weight: 600;
+    text-decoration: none; transition: all 0.2s; white-space: nowrap;
+}
+.hlang-btn:hover { border-color: rgba(255,255,255,0.65); color: var(--white); }
+.hlang-btn.active {
+    background: var(--green-light); border-color: var(--green-light);
+    color: var(--green-deep);
+}
+
+/* ── Stats strip ── */
+.stats-strip {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+.stat-cell {
+    flex: 1; padding: 1.1rem 1.5rem; text-align: center;
+    border-right: 1px solid var(--border);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-num {
+    font-family: 'Lora', serif; font-size: 1.7rem; font-weight: 700;
+    color: var(--green-mid); line-height: 1;
+}
+.stat-label {
+    font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-muted); margin-top: 4px;
 }
 
 /* ── Section wrapper ── */
-.section {
-    padding: 3rem clamp(1.5rem, 7%, 5rem);
-}
-.section-head {
-    text-align: center;
-    margin-bottom: 2rem;
-}
+.section { padding: 2.75rem clamp(1.5rem, 7%, 5rem); }
+.section-head { margin-bottom: 1.75rem; }
 .section-label {
-    font-size: 0.72rem; font-weight: 700;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 0.5rem;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 0.4rem;
 }
 .section-head h2 {
     font-family: 'Lora', serif;
-    font-size: clamp(1.3rem, 3vw, 1.75rem);
-    font-weight: 700;
-    color: var(--green-deep);
+    font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+    font-weight: 700; color: var(--green-deep);
 }
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .section-head h2 { color: var(--green-light); }
 }
 :root[data-theme="dark"] .section-head h2 { color: var(--green-light); }
-
-.section-desc {
-    color: var(--text-muted); font-size: 0.9rem;
-    margin-top: 0.4rem; line-height: 1.7;
-}
+.section-desc { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.35rem; line-height: 1.7; }
 
 /* ── Resource cards grid ── */
 .resource-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.2rem;
 }
 .res-card {
     display: flex; flex-direction: column;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 14px;
-    padding: 1.75rem 1.5rem;
-    text-decoration: none;
-    color: var(--fg);
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 1.6rem 1.4rem;
+    text-decoration: none; color: var(--fg);
     transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 .res-card:hover {
@@ -219,131 +230,151 @@ body {
     box-shadow: 0 6px 24px rgba(45,106,79,0.14);
     transform: translateY(-3px);
 }
+/* role-specific card accents */
+.res-card.admin-card { border-left: 3px solid #5c6bc0; }
+.res-card.chw-card   { border-left: 3px solid var(--gold); }
+
 .res-icon {
-    width: 52px; height: 52px; border-radius: 12px;
+    width: 48px; height: 48px; border-radius: 12px;
     background: linear-gradient(135deg, #e8f5ee, #d0f0e0);
     display: flex; align-items: center; justify-content: center;
-    margin-bottom: 1rem; flex-shrink: 0;
+    margin-bottom: 0.9rem; flex-shrink: 0;
 }
+.res-icon.purple { background: linear-gradient(135deg, #ede7f6, #d1c4e9); }
+.res-icon.gold   { background: linear-gradient(135deg, #fff8e1, #ffecb3); }
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .res-icon { background: linear-gradient(135deg, #1a3d2b, #2d6a4f); }
+    :root:not([data-theme="light"]) .res-icon         { background: linear-gradient(135deg, #1a3d2b, #2d6a4f); }
+    :root:not([data-theme="light"]) .res-icon.purple  { background: linear-gradient(135deg, #1a1040, #312060); }
+    :root:not([data-theme="light"]) .res-icon.gold    { background: linear-gradient(135deg, #2a1c00, #4a3000); }
 }
-:root[data-theme="dark"] .res-icon { background: linear-gradient(135deg, #1a3d2b, #2d6a4f); }
+:root[data-theme="dark"] .res-icon         { background: linear-gradient(135deg, #1a3d2b, #2d6a4f); }
+:root[data-theme="dark"] .res-icon.purple  { background: linear-gradient(135deg, #1a1040, #312060); }
+:root[data-theme="dark"] .res-icon.gold    { background: linear-gradient(135deg, #2a1c00, #4a3000); }
 
 .res-card h3 {
-    font-family: 'Lora', serif;
-    font-size: 1rem; font-weight: 600;
-    color: var(--green-deep);
-    margin-bottom: 0.45rem;
+    font-family: 'Lora', serif; font-size: 0.975rem; font-weight: 600;
+    color: var(--green-deep); margin-bottom: 0.4rem;
 }
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .res-card h3 { color: var(--green-light); }
 }
 :root[data-theme="dark"] .res-card h3 { color: var(--green-light); }
-
-.res-card p {
-    font-size: 0.835rem; color: var(--text-muted);
-    line-height: 1.65; flex: 1;
-}
+.res-card p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.65; flex: 1; }
 .res-arrow {
-    margin-top: 1rem; align-self: flex-start;
-    display: flex; align-items: center; gap: 4px;
-    font-size: 0.8rem; font-weight: 600;
-    color: var(--green-mid);
+    margin-top: 0.9rem; display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.78rem; font-weight: 600; color: var(--green-mid);
 }
 .res-arrow svg { transition: transform 0.2s; }
 .res-card:hover .res-arrow svg { transform: translateX(3px); }
 
-/* ── Account section ── */
-.account-section { background: var(--cream-dark); }
+/* ── Recent articles ── */
+.alt-section { background: var(--cream-dark); }
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .account-section { background: #0f2518; }
+    :root:not([data-theme="light"]) .alt-section { background: #0f2518; }
 }
-:root[data-theme="dark"] .account-section { background: #0f2518; }
+:root[data-theme="dark"] .alt-section { background: #0f2518; }
 
+.recent-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.recent-item {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.25rem;
+    text-decoration: none; color: var(--fg);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.recent-item:hover { border-color: var(--green-mid); box-shadow: 0 3px 14px rgba(45,106,79,0.1); }
+.recent-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.recent-title {
+    font-size: 0.9rem; font-weight: 500; flex: 1;
+}
+.recent-cat {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 10px;
+    flex-shrink: 0;
+}
+.recent-date { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
+
+.no-recent {
+    background: var(--surface); border: 1.5px dashed var(--border);
+    border-radius: 10px; padding: 1.5rem; text-align: center;
+    font-size: 0.875rem; color: var(--text-muted);
+}
+
+/* ── Account card ── */
 .account-card {
-    max-width: 560px; margin: 0 auto;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: var(--card-shadow);
+    max-width: 480px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 14px; overflow: hidden; box-shadow: var(--card-shadow);
 }
 .account-row {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
+    padding: 0.9rem 1.4rem; border-bottom: 1px solid var(--border);
 }
 .account-row:last-child { border-bottom: none; }
 .acct-label {
-    font-size: 0.8rem; font-weight: 600;
-    color: var(--text-muted); text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
 }
-.acct-value {
-    font-size: 0.9rem; font-weight: 500; color: var(--fg);
-}
+.acct-value { font-size: 0.875rem; font-weight: 500; color: var(--fg); }
 .acct-badge {
     display: inline-block;
     background: linear-gradient(135deg, #e8f5ee, #d0f0e0);
-    color: var(--green-mid);
-    font-size: 0.78rem; font-weight: 600;
+    color: var(--green-mid); font-size: 0.76rem; font-weight: 600;
     padding: 3px 10px; border-radius: 20px;
 }
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .acct-badge { background: rgba(45,106,79,0.25); color: var(--green-light); }
 }
 :root[data-theme="dark"] .acct-badge { background: rgba(45,106,79,0.25); color: var(--green-light); }
+.acct-badge.admin { background: rgba(92,107,192,0.15); color: #5c6bc0; }
+.acct-badge.chw   { background: rgba(201,145,61,0.18); color: var(--gold); }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .acct-badge.admin { background: rgba(92,107,192,0.3); color: #9fa8da; }
+    :root:not([data-theme="light"]) .acct-badge.chw   { background: rgba(201,145,61,0.25); color: var(--gold-light); }
+}
+:root[data-theme="dark"] .acct-badge.admin { background: rgba(92,107,192,0.3); color: #9fa8da; }
+:root[data-theme="dark"] .acct-badge.chw   { background: rgba(201,145,61,0.25); color: var(--gold-light); }
 
-/* ── Quick actions strip ── */
+/* ── Quick actions ── */
 .quick-strip {
-    display: flex; gap: 0.85rem; flex-wrap: wrap;
-    margin-top: 1.75rem; justify-content: center;
+    display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem;
 }
 .quick-btn {
     display: inline-flex; align-items: center; gap: 8px;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    color: var(--fg);
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.85rem; font-weight: 500;
-    padding: 0.65rem 1.25rem; border-radius: 8px;
-    text-decoration: none;
+    background: var(--surface); border: 1.5px solid var(--border);
+    color: var(--fg); font-family: 'Poppins', sans-serif;
+    font-size: 0.84rem; font-weight: 500;
+    padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
-.quick-btn:hover {
-    border-color: var(--green-mid);
-    box-shadow: 0 2px 10px rgba(45,106,79,0.12);
+.quick-btn:hover { border-color: var(--green-mid); box-shadow: 0 2px 10px rgba(45,106,79,0.12); }
+.quick-btn.danger {
+    background: var(--gold); border-color: var(--gold); color: var(--white);
 }
-.quick-btn.gold {
-    background: var(--gold);
-    border-color: var(--gold);
-    color: var(--white);
-}
-.quick-btn.gold:hover { background: #b8802d; border-color: #b8802d; }
+.quick-btn.danger:hover { background: #b8802d; border-color: #b8802d; }
 
 /* ── Footer ── */
 footer {
-    background: var(--ink);
-    color: rgba(255,255,255,0.65);
-    text-align: center;
-    padding: 1.25rem 1rem;
-    font-size: 0.8rem;
-    line-height: 1.8;
-    margin-top: auto;
+    background: var(--ink); color: rgba(255,255,255,0.65);
+    text-align: center; padding: 1.25rem 1rem;
+    font-size: 0.8rem; line-height: 1.8; margin-top: auto;
 }
 
 /* ── Responsive ── */
-@media (max-width: 900px) {
-    .resource-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 640px) {
+    .stats-strip { flex-wrap: wrap; }
+    .stat-cell   { flex: 1 1 33%; border-bottom: 1px solid var(--border); }
+    .recent-date { display: none; }
 }
-@media (max-width: 540px) {
+@media (max-width: 400px) {
     .resource-grid { grid-template-columns: 1fr; }
-    .hero { padding: 2.25rem 1.25rem; }
 }
 </style>
 </head>
 <body>
+<?php include '../admin/_back_strip.php'; ?>
 
 <header class="navbar">
     <a href="index.php" class="logo">
@@ -356,26 +387,47 @@ footer {
         <a href="../health/index.php">Health Education</a>
         <a href="../myth/index.php">Myth vs Fact</a>
         <a href="../symptom/index.php">Symptoms</a>
-        <a href="language.php">Language</a>
         <a href="../auth/logout.php" class="nav-logout">Logout</a>
     </nav>
 </header>
 
-<!-- Hero banner -->
+<!-- Hero -->
 <section class="hero">
     <div class="hero-inner">
         <p class="hero-eyebrow">Welcome back</p>
-        <h1>Hello, <?= htmlspecialchars($full_name) ?> 👋</h1>
-        <p class="hero-sub">Access health education, myth-busting facts, and symptom guidance — all available in your language.</p>
-        <div class="hero-lang-badge">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-            <?= ucfirst(htmlspecialchars($language)) ?>
+        <h1>Hello, <?= htmlspecialchars($full_name) ?></h1>
+        <p class="hero-sub">Access health education, myth-busting facts, and symptom guidance — available in English, Kiswahili, and Maa.</p>
+        <div class="hero-lang">
+            <span class="hero-lang-label">Language:</span>
+            <a href="language.php?lang=english&redirect=<?= urlencode('index.php') ?>"
+               class="hlang-btn <?= $language === 'english'   ? 'active' : '' ?>">EN</a>
+            <a href="language.php?lang=kiswahili&redirect=<?= urlencode('index.php') ?>"
+               class="hlang-btn <?= $language === 'kiswahili' ? 'active' : '' ?>">SW</a>
+            <a href="language.php?lang=maa&redirect=<?= urlencode('index.php') ?>"
+               class="hlang-btn <?= $language === 'maa'       ? 'active' : '' ?>">MAA</a>
         </div>
     </div>
 </section>
+
+<!-- Stats strip -->
+<div class="stats-strip">
+    <div class="stat-cell">
+        <div class="stat-num"><?= $stat_articles ?></div>
+        <div class="stat-label">Health Articles</div>
+    </div>
+    <div class="stat-cell">
+        <div class="stat-num"><?= $stat_myths ?></div>
+        <div class="stat-label">Myth vs Fact Entries</div>
+    </div>
+    <div class="stat-cell">
+        <div class="stat-num"><?= $stat_symptoms ?></div>
+        <div class="stat-label">Symptom Guides</div>
+    </div>
+    <div class="stat-cell">
+        <div class="stat-num">3</div>
+        <div class="stat-label">Languages Supported</div>
+    </div>
+</div>
 
 <!-- Health resources -->
 <section class="section">
@@ -389,15 +441,14 @@ footer {
 
         <a href="../health/index.php" class="res-card">
             <div class="res-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                 </svg>
             </div>
             <h3>Health Education</h3>
-            <p>Maternal health, child nutrition, immunization schedules, and common disease prevention — in your language.</p>
-            <span class="res-arrow">
-                Explore
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <p>Maternal health, child nutrition, immunization, and disease prevention — evidence-based and in your language.</p>
+            <span class="res-arrow">Explore
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
             </span>
@@ -405,15 +456,15 @@ footer {
 
         <a href="../myth/index.php" class="res-card">
             <div class="res-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
             </div>
             <h3>Myth vs Fact</h3>
-            <p>Separate health myths from evidence-based facts, with context for local beliefs and cultural practices.</p>
-            <span class="res-arrow">
-                Explore
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <p>Use our AI model to check health beliefs, and browse evidence-based corrections verified against WHO guidelines.</p>
+            <span class="res-arrow">Explore
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
             </span>
@@ -421,42 +472,92 @@ footer {
 
         <a href="../symptom/index.php" class="res-card">
             <div class="res-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                 </svg>
             </div>
             <h3>Symptom Guidance</h3>
-            <p>Describe your symptoms and get guidance on whether to seek care at a clinic or manage at home.</p>
-            <span class="res-arrow">
-                Explore
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <p>Describe your symptoms and get ML-powered guidance on whether to seek care or manage at home safely.</p>
+            <span class="res-arrow">Explore
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
             </span>
         </a>
 
-        <a href="language.php" class="res-card">
-            <div class="res-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        <?php if ($role === 'admin'): ?>
+        <a href="../admin/index.php" class="res-card admin-card">
+            <div class="res-icon purple">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5c6bc0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
             </div>
-            <h3>Change Language</h3>
-            <p>Switch between English, Kiswahili, and Maa to read all content in your preferred language.</p>
-            <span class="res-arrow">
-                Switch
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <h3>Admin Dashboard</h3>
+            <p>Manage platform content, review user suggestions, and monitor the health education library.</p>
+            <span class="res-arrow" style="color:#5c6bc0">Go to Admin
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
             </span>
         </a>
+        <?php endif; ?>
+
+        <?php if ($role === 'chw'): ?>
+        <a href="../chw/index.php" class="res-card chw-card">
+            <div class="res-icon gold">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9913d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+            </div>
+            <h3>CHW Portal</h3>
+            <p>Access your Community Health Worker tools, patient guidance notes, and field support resources.</p>
+            <span class="res-arrow" style="color:var(--gold)">Go to CHW Portal
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+            </span>
+        </a>
+        <?php endif; ?>
 
     </div>
 </section>
 
+<!-- Recently added articles -->
+<section class="section alt-section">
+    <div class="section-head">
+        <p class="section-label">Latest Content</p>
+        <h2>Recently Added Articles</h2>
+        <p class="section-desc">The newest health education content on the platform.</p>
+    </div>
+
+    <?php if (empty($recent_arts)): ?>
+        <div class="no-recent">No articles have been added yet. Check back soon.</div>
+    <?php else: ?>
+        <div class="recent-list">
+            <?php foreach ($recent_arts as $art):
+                $cat   = $art['category'] ?? 'general';
+                $color = $cat_color[$cat] ?? '#6b7c6d';
+                $title = art_title($art, $language);
+                $date  = date('d M Y', strtotime($art['created_at']));
+            ?>
+                <a href="../health/index.php" class="recent-item">
+                    <span class="recent-dot" style="background:<?= $color ?>"></span>
+                    <span class="recent-title"><?= htmlspecialchars($title) ?></span>
+                    <span class="recent-cat" style="color:<?= $color ?>;background:<?= $color ?>18">
+                        <?= htmlspecialchars(ucfirst($cat)) ?>
+                    </span>
+                    <span class="recent-date"><?= $date ?></span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</section>
+
 <!-- Account details -->
-<section class="section account-section">
+<section class="section">
     <div class="section-head">
         <p class="section-label">Your Account</p>
         <h2>Account Details</h2>
@@ -469,25 +570,26 @@ footer {
         </div>
         <div class="account-row">
             <span class="acct-label">Role</span>
-            <span class="acct-badge"><?= ucfirst(str_replace('_', ' ', $role)) ?></span>
+            <?php
+            $badge_class = match($role) {
+                'admin' => 'acct-badge admin',
+                'chw'   => 'acct-badge chw',
+                default => 'acct-badge',
+            };
+            ?>
+            <span class="<?= $badge_class ?>"><?= ucfirst(str_replace('_', ' ', $role)) ?></span>
         </div>
         <div class="account-row">
             <span class="acct-label">Preferred Language</span>
-            <span class="acct-value"><?= ucfirst(htmlspecialchars($language)) ?></span>
+            <span class="acct-value"><?= htmlspecialchars($lang_label[$language] ?? ucfirst($language)) ?></span>
         </div>
     </div>
 
     <div class="quick-strip">
-        <a href="language.php" class="quick-btn">
+        <a href="../auth/logout.php" class="quick-btn danger">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-            Change Language
-        </a>
-        <a href="../auth/logout.php" class="quick-btn gold">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
             Logout
         </a>
