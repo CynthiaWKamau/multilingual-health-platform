@@ -24,10 +24,10 @@ if (in_array($lang, $allowed)) {
     }
 }
 
-// Redirect back to wherever they came from, defaulting to dashboard
+// defaulting to dashboard
 $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '../dashboard/index.php';
 
-// Safety: only allow relative redirects (no external URLs)
+// prevents external URLs
 if (preg_match('/^https?:\/\//i', $redirect)) {
     $redirect = '../dashboard/index.php';
 }

@@ -14,18 +14,18 @@ if ($conn->connect_error) {
 
 $conn->set_charset("utf8mb4");
 
-// ── Groq AI ───────────────────────────────────────────────────────────────────
+// Groq AI 
 define('GROQ_API_KEY', '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');
 define('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions');
 define('GROQ_MODEL',   'llama3-8b-8192');
 
-// ── Google Cloud Translation ──────────────────────────────────────────────────
+//  Google Cloud Translation 
 define('GOOGLE_TRANSLATE_API_KEY', 'YOUR_GOOGLE_API_KEY_HERE');
 
-// ── ML Flask API ──────────────────────────────────────────────────────────────
+//  ML Flask API 
 define('ML_API_URL', 'http://127.0.0.1:5000');
 
-// ── Language codes (for Google Translate) ────────────────────────────────────
+//  Language codes (for Google Translate) 
 define('LANG_CODES', [
     'english'   => 'en',
     'kiswahili' => 'sw',

@@ -12,7 +12,7 @@ $full_name = $_SESSION['full_name'];
 $role      = $_SESSION['role'];
 $language  = $_SESSION['language'] ?? 'english';
 
-// ── Live stats ────────────────────────────────────────────────────────────────
+// Live stats 
 function db_count($conn, $table) {
     $r = $conn->query("SELECT COUNT(*) AS n FROM `$table`");
     return ($r && $row = $r->fetch_assoc()) ? (int)$row['n'] : 0;
@@ -21,7 +21,7 @@ $stat_articles = db_count($conn, 'health_education');
 $stat_myths    = db_count($conn, 'myth_facts');
 $stat_symptoms = db_count($conn, 'symptom_guidance');
 
-// ── Recent articles ───────────────────────────────────────────────────────────
+// Recent articles
 $recent_arts = [];
 $ra = $conn->query(
     "SELECT id, title, title_sw, title_maa, category, created_at

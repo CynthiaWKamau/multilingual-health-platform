@@ -1,5 +1,4 @@
 <?php
-// I start the session and handle login logic before any HTML output
 session_start();
 include '../config/database.php';
 
