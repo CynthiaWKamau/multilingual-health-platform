@@ -64,7 +64,7 @@ function groq_translate_to_maa(string $text): string
             ],
         ],
         'temperature' => 0.2,
-        'max_tokens' => 1024,
+        'max_tokens' => 2048,
     ];
 
     // Send the request to Groq.
