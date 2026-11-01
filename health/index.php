@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../config/database.php';
+include '../config/translate.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
