@@ -1,108 +1,131 @@
 <?php
-$is_cli = (php_sapi_name() === 'cli');
 
-if (!$is_cli) {
-    session_start();
-    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-        http_response_code(403); exit('Access denied.');
-    }
-    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Kiswahili Translation</title>
-    <style>body{font-family:monospace;padding:2rem;background:#f8fdf9;color:#1a3d2b;}
-    .ok{color:#2d6a4f;}.skip{color:#888;}.err{color:#c0392b;}</style></head><body>
-    <h2>Kiswahili Bulk Translation — Google Translate</h2>';
-    ob_start();
+if (!in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) {
+    http_response_code(403);
+    exit('Local use only.');
 }
 
-include_once __DIR__ . '/../config/database.php';
-include_once __DIR__ . '/../config/translate.php';
+set_time_limit(0);
+require __DIR__ . '/../config/database.php';
 
-if (!defined('GOOGLE_TRANSLATE_API_KEY') || GOOGLE_TRANSLATE_API_KEY === 'YOUR_GOOGLE_API_KEY_HERE') {
-    $msg = 'GOOGLE_TRANSLATE_API_KEY is not set in config/database.php.';
-    $is_cli ? print($msg . PHP_EOL) : print('<p class="err">' . $msg . '</p></body></html>') && ob_end_flush();
-    exit(1);
-}
+// Show progress line by line instead of waiting for the end.
+header('Content-Type: text/html; charset=utf-8');
+while (ob_get_level()) ob_end_flush();
+ob_implicit_flush(true);
 
 $tables = [
-    'health_education' => [
-        ['title',   'title_sw'],
-        ['content', 'content_sw'],
-    ],
-    'myth_facts' => [
-        ['myth', 'myth_sw'],
-        ['fact', 'fact_sw'],
-    ],
-    'symptom_guidance' => [
-        ['symptom',           'symptom_sw'],
-        ['possible_cause',    'possible_cause_sw'],
-        ['self_care',         'self_care_sw'],
-        ['when_to_seek_care', 'when_to_seek_care_sw'],
-    ],
+    'health_education' => ['title', 'content'],
+    'myth_facts'       => ['myth', 'fact'],
+    'symptom_guidance' => ['symptom', 'possible_cause', 'self_care', 'when_to_seek_care'],
 ];
 
-function log_sw(string $msg, string $type = ''): void
+// Ask Groq for a Kiswahili translation. Returns [text, error].
+function groq_sw(string $text): array
 {
-    global $is_cli;
-    if ($is_cli) { echo $msg . PHP_EOL; return; }
-    echo '<div class="' . $type . '">' . htmlspecialchars($msg) . '</div>';
-    ob_flush(); flush();
+    $payload = [
+        'model' => GROQ_MODEL,
+        'messages' => [
+            [
+                'role' => 'system',
+                'content' => 'You are a professional English-to-Kiswahili medical translator for community health '
+                           . 'materials in Kenya. Translate the user\'s text into clear, simple standard Kiswahili '
+                           . 'as used by the Kenya Ministry of Health. Keep numbers, medicine names and abbreviations '
+                           . 'such as HIV, ORS and WHO unchanged. Return ONLY the Kiswahili translation, with no notes, '
+                           . 'quotes or explanations.',
+            ],
+            ['role' => 'user', 'content' => $text],
+        ],
+        'temperature' => 0.2,
+        'max_tokens'  => 2048,
+    ];
+
+    for ($attempt = 1; $attempt <= 3; $attempt++) {
+        $ch = curl_init(GROQ_API_URL);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . GROQ_API_KEY,
+            ],
+            CURLOPT_TIMEOUT => 60,
+        ]);
+        $res  = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $cerr = curl_error($ch);
+        curl_close($ch);
+
+        if ($code === 429) {            // rate limited: wait and retry
+            sleep(15);
+            continue;
+        }
+        if ($cerr)          return ['', 'cURL error: ' . $cerr];
+        if ($code !== 200)  return ['', "HTTP $code: " . substr((string)$res, 0, 200)];
+
+        $data = json_decode($res, true);
+        $out  = $data['choices'][0]['message']['content'] ?? '';
+        $out  = preg_replace('/<think>.*?<\/think>/s', '', $out);   // strip reasoning blocks
+        return [trim($out, " \t\n\r\"'"), ''];
+    }
+    return ['', 'Rate limited 3 times, skipped'];
 }
 
-function ensure_sw_col(mysqli $conn, string $table, string $col): void
+// Reject empty, untranslated or repetitive ("nyorok-nyorok-nyorok") output.
+function looks_broken(string $out, string $in): bool
 {
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-                            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
-    $stmt->bind_param('ss', $table, $col);
-    $stmt->execute();
-    $stmt->bind_result($n);
-    $stmt->fetch();
-    $stmt->close();
-    if (!$n) $conn->query("ALTER TABLE `{$table}` ADD COLUMN `{$col}` TEXT NULL DEFAULT NULL");
+    if ($out === '') return true;
+    if (strcasecmp(trim($out), trim($in)) === 0) return true;
+
+    $words = preg_split('/\s+/u', mb_strtolower($out), -1, PREG_SPLIT_NO_EMPTY);
+    if (count($words) >= 8 && count(array_unique($words)) / count($words) < 0.35) return true;
+    if (preg_match('/(\b\S+\b)(?:[\s-]+\1\b){3,}/u', $out)) return true;
+
+    $ratio = mb_strlen($out) / max(1, mb_strlen($in));
+    return $ratio < 0.4 || $ratio > 3;
 }
 
-$translated = $skipped = $errors = 0;
+$done = $skipped = $failed = 0;
+echo '<pre style="font:14px/1.5 monospace">';
 
 foreach ($tables as $table => $fields) {
-    log_sw("=== {$table} ===");
-    foreach ($fields as [$eng, $sw]) ensure_sw_col($conn, $table, $sw);
-
-    $where = implode(' OR ', array_map(fn($f) => "(`{$f[1]}` IS NULL OR `{$f[1]}` = '')", $fields));
-    $cols  = implode(', ', array_map(fn($f) => "`{$f[0]}`", $fields));
-    $rows  = $conn->query("SELECT id, {$cols} FROM `{$table}` WHERE {$where} LIMIT 500")->fetch_all(MYSQLI_ASSOC);
-
-    if (empty($rows)) { log_sw('  All done — nothing to translate.', 'skip'); continue; }
-    log_sw('  ' . count($rows) . ' row(s) to translate.');
+    echo "\n=== $table ===\n";
+    $rows = $conn->query("SELECT * FROM `$table` ORDER BY id")->fetch_all(MYSQLI_ASSOC);
 
     foreach ($rows as $row) {
-        $id = (int)$row['id'];
-        $updates = []; $params = []; $types = '';
+        foreach ($fields as $f) {
+            $en = trim($row[$f] ?? '');
+            $sw = trim($row[$f . '_sw'] ?? '');
 
-        foreach ($fields as [$eng, $sw]) {
-            if (!empty($row[$sw])) { $skipped++; continue; }
-            $text = trim($row[$eng] ?? '');
-            if (!$text) { $skipped++; continue; }
+            if ($en === '') continue;
+            if ($sw !== '' && $sw !== $en) { $skipped++; continue; }   // already translated
 
-            log_sw("  Row {$id} — {$eng} → {$sw}...");
-            $result = google_translate_to_sw($text);
+            [$out, $err] = groq_sw($en);
 
-            if (!$result) { log_sw("  Row {$id} — {$sw}: empty response.", 'err'); $errors++; continue; }
+            if ($err !== '') {
+                echo "✗ #{$row['id']} $f — $err\n";
+                $failed++;
+                continue;
+            }
+            if (looks_broken($out, $en)) {
+                echo "✗ #{$row['id']} $f — rejected bad output, kept English\n";
+                $failed++;
+                continue;
+            }
 
-            $updates[] = "`{$sw}` = ?";
-            $params[]  = $result;
-            $types    .= 's';
-            log_sw("  Row {$id} — {$sw}: OK", 'ok');
-            $translated++;
-            usleep(200000);
-        }
-
-        if ($updates) {
-            $stmt = $conn->prepare("UPDATE `{$table}` SET " . implode(', ', $updates) . " WHERE id = ?");
-            $params[] = $id; $types .= 'i';
-            $stmt->bind_param($types, ...$params);
+            $col  = $f . '_sw';
+            $stmt = $conn->prepare("UPDATE `$table` SET `$col` = ? WHERE id = ?");
+            $stmt->bind_param('si', $out, $row['id']);
             $stmt->execute();
             $stmt->close();
+
+            echo "✓ #{$row['id']} $f → " . htmlspecialchars(mb_substr($out, 0, 70)) . "\n";
+            $done++;
+            sleep(2);   // stay under Groq's free-tier rate limit
         }
     }
 }
 
-$summary = "Translated: {$translated} | Skipped: {$skipped} | Errors: {$errors}";
-$is_cli ? print($summary . PHP_EOL) : print('<pre style="margin-top:1rem;background:#e8f5e9;padding:1rem">' . $summary . '</pre></body></html>') && ob_end_flush();
+echo "\nFinished. Translated: $done | Already done: $skipped | Failed/rejected: $failed\n";
+if ($failed) echo "Re-run this page to retry the failed ones.\n";
+echo '</pre>';

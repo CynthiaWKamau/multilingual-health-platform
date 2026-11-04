@@ -32,5 +32,6 @@ if (preg_match('/^https?:\/\//i', $redirect)) {
     $redirect = '../dashboard/index.php';
 }
 
+session_write_close();
 header('Location: ' . $redirect);
 exit();
