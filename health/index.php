@@ -53,7 +53,7 @@ $cat_meta = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Health Education — Samburu Health</title>
+<title>Health Education &mdash; Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -396,7 +396,7 @@ footer {
             <a href="?category=nutrition<?= !empty($search) ? '&search='.urlencode($search) : '' ?>"
                class="filter-btn <?= $category === 'nutrition' ? 'active' : '' ?>">Nutrition</a>
             <div class="search-form">
-                <input type="text" name="search" placeholder="Search articles…"
+                <input type="text" name="search" placeholder="Search articles&hellip;"
                     value="<?= htmlspecialchars($search) ?>">
                 <input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>">
                 <button type="submit">
@@ -427,18 +427,19 @@ footer {
         </div>
     <?php else: ?>
         <div class="articles-grid">
-            <?php foreach ($articles as $article):
-                $c       = get_content($article, $lang);
-                $preview = substr(strip_tags($c['content']), 0, 130);
+           <?php foreach ($articles as $article):
+                  $c         = get_content($article, $lang);
+                 if ($article['id'] == 1) { error_log("CARD1: lang=$lang title_sw=" . ($article['title_sw']??'NULL') . " title_maa=" . ($article['title_maa']??'NULL')); }
+                $preview   = substr(strip_tags($c['content']), 0, 130);
                 if (strlen(strip_tags($c['content'])) > 130) $preview .= '…';
-                $cat     = $article['category'] ?? 'general';
+                $cat       = $article['category'] ?? 'general';
                 $cat_label = $cat_meta[$cat]['label'] ?? ucfirst($cat);
-                // Safely encode for JS
-                $js_title   = json_encode($c['title']);
-                $js_content = json_encode($c['content']);
-                $js_cat     = json_encode($cat_label);
             ?>
-                <div class="article-card" onclick="openModal(<?= $js_title ?>, <?= $js_content ?>, <?= $js_cat ?>)">
+                <div class="article-card"
+                     data-title="<?= htmlspecialchars($c['title'], ENT_QUOTES) ?>"
+                     data-content="<?= htmlspecialchars($c['content'], ENT_QUOTES) ?>"
+                     data-cat="<?= htmlspecialchars($cat_label, ENT_QUOTES) ?>"
+                     onclick="openModal(this)">
                     <div class="article-top">
                         <span class="cat-pill cat-<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat_label) ?></span>
                         <h3><?= htmlspecialchars($c['title']) ?></h3>
@@ -479,17 +480,17 @@ footer {
 </div>
 
 <footer>
-    <p>© 2026 Samburu Health Platform</p>
+    <p>&copy; 2026 Samburu Health Platform</p>
     <p>Health education and basic telemedicine guidance for rural communities in Kenya</p>
 </footer>
 
 <script>
-function openModal(title, content, category) {
-    document.getElementById('modalTitle').textContent = title;
-    document.getElementById('modalBody').textContent  = content;
+function openModal(el) {
+    document.getElementById('modalTitle').textContent = el.dataset.title;
+    document.getElementById('modalBody').textContent  = el.dataset.content;
     const catEl = document.getElementById('modalCat');
-    catEl.textContent  = category;
-    catEl.className    = 'cat-pill';
+    catEl.textContent = el.dataset.cat;
+    catEl.className   = 'cat-pill';
     document.getElementById('modalOverlay').classList.add('active');
     document.body.style.overflow = 'hidden';
 }

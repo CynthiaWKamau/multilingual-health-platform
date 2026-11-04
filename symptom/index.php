@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../config/database.php';
+include '../config/translate.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
@@ -50,7 +51,7 @@ If asked anything outside health topics, politely decline.
 " . $lang_instruction;
 
     $data = json_encode([
-        'model'       => 'llama3-8b-8192',
+        'model'       => GROQ_MODEL,
         'messages'    => [
             ['role' => 'system', 'content' => $system_prompt],
             ['role' => 'user',   'content' => $question]
@@ -578,34 +579,34 @@ footer {
                 $u = urgency_style($entry['urgency']);
             ?>
                 <div class="symptom-card">
-                    <div class="symptom-card-header">
-                        <h3><?= htmlspecialchars($entry['symptom']) ?></h3>
-                        <span class="urgency-badge" style="color:<?= $u['color'] ?>;background:var(<?= $u['bg'] ?>)">
-                            <?php if ($entry['urgency'] === 'high'): ?>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            <?php elseif ($entry['urgency'] === 'medium'): ?>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            <?php else: ?>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
-                            <?php endif; ?>
-                            <?= $u['label'] ?>
-                        </span>
-                    </div>
-                    <div class="symptom-card-body">
-                        <div class="info-row">
-                            <p class="info-row-label">Possible Causes</p>
-                            <p class="info-row-value"><?= htmlspecialchars($entry['possible_cause']) ?></p>
-                        </div>
-                        <div class="info-row">
-                            <p class="info-row-label">Self Care at Home</p>
-                            <p class="info-row-value"><?= htmlspecialchars($entry['self_care']) ?></p>
-                        </div>
-                        <div class="info-row">
-                            <p class="info-row-label">When to Seek Care</p>
-                            <p class="info-row-value"><?= htmlspecialchars($entry['when_to_seek_care']) ?></p>
-                        </div>
-                    </div>
-                </div>
+    <div class="symptom-card-header">
+        <h3><?= htmlspecialchars(t($entry, 'symptom')) ?></h3>
+        <span class="urgency-badge" style="color:<?= $u['color'] ?>;background:var(<?= $u['bg'] ?>)">
+            <?php if ($entry['urgency'] === 'high'): ?>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <?php elseif ($entry['urgency'] === 'medium'): ?>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <?php else: ?>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+            <?php endif; ?>
+            <?= $u['label'] ?>
+        </span>
+    </div>
+    <div class="symptom-card-body">
+        <div class="info-row">
+            <p class="info-row-label">Possible Causes</p>
+            <p class="info-row-value"><?= htmlspecialchars(t($entry, 'possible_cause')) ?></p>
+        </div>
+        <div class="info-row">
+            <p class="info-row-label">Self Care at Home</p>
+            <p class="info-row-value"><?= htmlspecialchars(t($entry, 'self_care')) ?></p>
+        </div>
+        <div class="info-row">
+            <p class="info-row-label">When to Seek Care</p>
+            <p class="info-row-value"><?= htmlspecialchars(t($entry, 'when_to_seek_care')) ?></p>
+        </div>
+    </div>
+</div>
             <?php endforeach; ?>
         <?php else: ?>
             <div class="no-results-card">
