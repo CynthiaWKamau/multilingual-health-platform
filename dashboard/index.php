@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../config/database.php';
+include '../config/translate.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
@@ -47,11 +48,12 @@ $cat_color = [
 $lang_label = ['english' => 'English', 'kiswahili' => 'Kiswahili', 'maa' => 'Maa'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $language === 'kiswahili' ? 'sw' : 'en' ?>" translate="no">
 <head>
 <meta charset="UTF-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — Samburu Health</title>
+<title><?= __('Dashboard') ?> — Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -384,21 +386,21 @@ footer {
         Samburu Health
     </a>
     <nav class="nav-links">
-        <a href="../health/index.php">Health Education</a>
-        <a href="../myth/index.php">Myth vs Fact</a>
-        <a href="../symptom/index.php">Symptoms</a>
-        <a href="../auth/logout.php" class="nav-logout">Logout</a>
+        <a href="../health/index.php"><?= __('Health Education') ?></a>
+        <a href="../myth/index.php"><?= __('Myth vs Fact') ?></a>
+        <a href="../symptom/index.php"><?= __('Symptoms') ?></a>
+        <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
 
 <!-- Hero -->
 <section class="hero">
     <div class="hero-inner">
-        <p class="hero-eyebrow">Welcome back</p>
-        <h1>Hello, <?= htmlspecialchars($full_name) ?></h1>
-        <p class="hero-sub">Access health education, myth-busting facts, and symptom guidance — available in English, Kiswahili, and Maa.</p>
+        <p class="hero-eyebrow"><?= __('Welcome back') ?></p>
+        <h1><?= sprintf(__('Hello, %s'), htmlspecialchars($full_name)) ?></h1>
+        <p class="hero-sub"><?= __('Access health education, myth-busting facts, and symptom guidance — available in English, Kiswahili, and Maa.') ?></p>
         <div class="hero-lang">
-            <span class="hero-lang-label">Language:</span>
+            <span class="hero-lang-label"><?= __('Language:') ?></span>
             <a href="language.php?lang=english&redirect=<?= urlencode('index.php') ?>"
                class="hlang-btn <?= $language === 'english'   ? 'active' : '' ?>">EN</a>
             <a href="language.php?lang=kiswahili&redirect=<?= urlencode('index.php') ?>"
@@ -413,28 +415,28 @@ footer {
 <div class="stats-strip">
     <div class="stat-cell">
         <div class="stat-num"><?= $stat_articles ?></div>
-        <div class="stat-label">Health Articles</div>
+        <div class="stat-label"><?= __('Health Articles') ?></div>
     </div>
     <div class="stat-cell">
         <div class="stat-num"><?= $stat_myths ?></div>
-        <div class="stat-label">Myth vs Fact Entries</div>
+        <div class="stat-label"><?= __('Myth vs Fact Entries') ?></div>
     </div>
     <div class="stat-cell">
         <div class="stat-num"><?= $stat_symptoms ?></div>
-        <div class="stat-label">Symptom Guides</div>
+        <div class="stat-label"><?= __('Symptom Guides') ?></div>
     </div>
     <div class="stat-cell">
         <div class="stat-num">3</div>
-        <div class="stat-label">Languages Supported</div>
+        <div class="stat-label"><?= __('Languages Supported') ?></div>
     </div>
 </div>
 
 <!-- Health resources -->
 <section class="section">
     <div class="section-head">
-        <p class="section-label">Health Resources</p>
-        <h2>What would you like to access today?</h2>
-        <p class="section-desc">Tap any card to explore that section of the platform.</p>
+        <p class="section-label"><?= __('Health Resources') ?></p>
+        <h2><?= __('What would you like to access today?') ?></h2>
+        <p class="section-desc"><?= __('Tap any card to explore that section of the platform.') ?></p>
     </div>
 
     <div class="resource-grid">
@@ -445,9 +447,9 @@ footer {
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                 </svg>
             </div>
-            <h3>Health Education</h3>
-            <p>Maternal health, child nutrition, immunization, and disease prevention — evidence-based and in your language.</p>
-            <span class="res-arrow">Explore
+            <h3><?= __('Health Education') ?></h3>
+            <p><?= __('Maternal health, child nutrition, immunization, and disease prevention — evidence-based and in your language.') ?></p>
+            <span class="res-arrow"><?= __('Explore') ?>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
@@ -461,9 +463,9 @@ footer {
                     <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
             </div>
-            <h3>Myth vs Fact</h3>
-            <p>Use our AI model to check health beliefs, and browse evidence-based corrections verified against WHO guidelines.</p>
-            <span class="res-arrow">Explore
+            <h3><?= __('Myth vs Fact') ?></h3>
+            <p><?= __('Use our AI model to check health beliefs, and browse evidence-based corrections verified against WHO guidelines.') ?></p>
+            <span class="res-arrow"><?= __('Explore') ?>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
@@ -476,9 +478,9 @@ footer {
                     <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                 </svg>
             </div>
-            <h3>Symptom Guidance</h3>
-            <p>Describe your symptoms and get ML-powered guidance on whether to seek care or manage at home safely.</p>
-            <span class="res-arrow">Explore
+            <h3><?= __('Symptom Guidance') ?></h3>
+            <p><?= __('Describe your symptoms and get ML-powered guidance on whether to seek care or manage at home safely.') ?></p>
+            <span class="res-arrow"><?= __('Explore') ?>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
@@ -492,9 +494,9 @@ footer {
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
             </div>
-            <h3>Admin Dashboard</h3>
-            <p>Manage platform content, review user suggestions, and monitor the health education library.</p>
-            <span class="res-arrow" style="color:#5c6bc0">Go to Admin
+            <h3><?= __('Admin Dashboard') ?></h3>
+            <p><?= __('Manage platform content, review user suggestions, and monitor the health education library.') ?></p>
+            <span class="res-arrow" style="color:#5c6bc0"><?= __('Go to Admin') ?>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
@@ -512,9 +514,9 @@ footer {
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
             </div>
-            <h3>CHW Portal</h3>
-            <p>Access your Community Health Worker tools, patient guidance notes, and field support resources.</p>
-            <span class="res-arrow" style="color:var(--gold)">Go to CHW Portal
+            <h3><?= __('CHW Portal') ?></h3>
+            <p><?= __('Access your Community Health Worker tools, patient guidance notes, and field support resources.') ?></p>
+            <span class="res-arrow" style="color:var(--gold)"><?= __('Go to CHW Portal') ?>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
@@ -528,13 +530,13 @@ footer {
 <!-- Recently added articles -->
 <section class="section alt-section">
     <div class="section-head">
-        <p class="section-label">Latest Content</p>
-        <h2>Recently Added Articles</h2>
-        <p class="section-desc">The newest health education content on the platform.</p>
+        <p class="section-label"><?= __('Latest Content') ?></p>
+        <h2><?= __('Recently Added Articles') ?></h2>
+        <p class="section-desc"><?= __('The newest health education content on the platform.') ?></p>
     </div>
 
     <?php if (empty($recent_arts)): ?>
-        <div class="no-recent">No articles have been added yet. Check back soon.</div>
+        <div class="no-recent"><?= __('No articles have been added yet. Check back soon.') ?></div>
     <?php else: ?>
         <div class="recent-list">
             <?php foreach ($recent_arts as $art):
@@ -547,7 +549,7 @@ footer {
                     <span class="recent-dot" style="background:<?= $color ?>"></span>
                     <span class="recent-title"><?= htmlspecialchars($title) ?></span>
                     <span class="recent-cat" style="color:<?= $color ?>;background:<?= $color ?>18">
-                        <?= htmlspecialchars(ucfirst($cat)) ?>
+                        <?= htmlspecialchars(__(ucfirst($cat))) ?>
                     </span>
                     <span class="recent-date"><?= $date ?></span>
                 </a>
@@ -559,17 +561,17 @@ footer {
 <!-- Account details -->
 <section class="section">
     <div class="section-head">
-        <p class="section-label">Your Account</p>
-        <h2>Account Details</h2>
+        <p class="section-label"><?= __('Your Account') ?></p>
+        <h2><?= __('Account Details') ?></h2>
     </div>
 
     <div class="account-card">
         <div class="account-row">
-            <span class="acct-label">Full Name</span>
+            <span class="acct-label"><?= __('Full Name') ?></span>
             <span class="acct-value"><?= htmlspecialchars($full_name) ?></span>
         </div>
         <div class="account-row">
-            <span class="acct-label">Role</span>
+            <span class="acct-label"><?= __('Role') ?></span>
             <?php
             $badge_class = match($role) {
                 'admin' => 'acct-badge admin',
@@ -577,11 +579,11 @@ footer {
                 default => 'acct-badge',
             };
             ?>
-            <span class="<?= $badge_class ?>"><?= ucfirst(str_replace('_', ' ', $role)) ?></span>
+            <span class="<?= $badge_class ?>"><?= htmlspecialchars(__(ucfirst(str_replace('_', ' ', $role)))) ?></span>
         </div>
         <div class="account-row">
-            <span class="acct-label">Preferred Language</span>
-            <span class="acct-value"><?= htmlspecialchars($lang_label[$language] ?? ucfirst($language)) ?></span>
+            <span class="acct-label"><?= __('Preferred Language') ?></span>
+            <span class="acct-value"><?= htmlspecialchars(__($lang_label[$language] ?? ucfirst($language))) ?></span>
         </div>
     </div>
 
@@ -591,14 +593,14 @@ footer {
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                 <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
-            Logout
+            <?= __('Logout') ?>
         </a>
     </div>
 </section>
 
 <footer>
     <p>© 2026 Samburu Health Platform</p>
-    <p>Health education and basic telemedicine guidance for rural communities in Kenya</p>
+    <p><?= __('Health education and basic telemedicine guidance for rural communities in Kenya') ?></p>
 </footer>
 
 </body>

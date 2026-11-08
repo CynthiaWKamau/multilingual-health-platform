@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['symptom_input'])) {
     $search_done = true;
 
     if (empty($user_input)) {
-        $error = 'Please describe your symptom or health question.';
+        $error = __('Please describe your symptom or health question.');
     } else {
         // 1. Call ML classifier
         $ml_result = call_ml_api('classify-symptom', $user_input);
@@ -91,11 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['symptom_input'])) {
         $search_term = $ml_result['db_search_term'] ?? $user_input;
         $stmt = $conn->prepare(
             "SELECT * FROM symptom_guidance
-             WHERE symptom LIKE ? OR possible_cause LIKE ?
+             WHERE symptom LIKE ? OR possible_cause LIKE ? OR symptom_sw LIKE ? OR possible_cause_sw LIKE ?
              ORDER BY urgency DESC"
         );
         $like = '%' . $search_term . '%';
-        $stmt->bind_param("ss", $like, $like);
+        $stmt->bind_param("ssss", $like, $like, $like, $like);
         $stmt->execute();
         $db_results = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
@@ -113,11 +113,12 @@ function urgency_style($urgency) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $lang === 'kiswahili' ? 'sw' : 'en' ?>" translate="no">
 <head>
 <meta charset="UTF-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Symptom Guidance — Samburu Health</title>
+<title><?= __('Symptom Guidance') ?> — Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -458,10 +459,10 @@ footer {
         Samburu Health
     </a>
     <nav class="nav-links">
-        <a href="../dashboard/index.php">Dashboard</a>
-        <a href="../health/index.php">Health Education</a>
-        <a href="../myth/index.php">Myth vs Fact</a>
-        <a href="index.php">Symptoms</a>
+        <a href="../dashboard/index.php"><?= __('Dashboard') ?></a>
+        <a href="../health/index.php"><?= __('Health Education') ?></a>
+        <a href="../myth/index.php"><?= __('Myth vs Fact') ?></a>
+        <a href="index.php"><?= __('Symptoms') ?></a>
         <div class="lang-switcher">
             <a href="../dashboard/language.php?lang=english&redirect=<?= urlencode('../symptom/index.php') ?>"
                class="lang-btn <?= $lang === 'english'   ? 'active' : '' ?>">EN</a>
@@ -470,16 +471,16 @@ footer {
             <a href="../dashboard/language.php?lang=maa&redirect=<?= urlencode('../symptom/index.php') ?>"
                class="lang-btn <?= $lang === 'maa'       ? 'active' : '' ?>">MAA</a>
         </div>
-        <a href="../auth/logout.php" class="nav-logout">Logout</a>
+        <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
 
 <!-- Hero -->
 <div class="page-hero">
     <div class="hero-inner">
-        <p class="hero-eyebrow">Symptom Guidance</p>
-        <h1>AI-Powered Health Guidance</h1>
-        <p>Describe your symptoms and get evidence-based advice from our ML classifier and AI health assistant, grounded in WHO and Kenya Ministry of Health guidelines.</p>
+        <p class="hero-eyebrow"><?= __('Symptom Guidance') ?></p>
+        <h1><?= __('AI-Powered Health Guidance') ?></h1>
+        <p><?= __('Describe your symptoms and get evidence-based advice from our ML classifier and AI health assistant, grounded in WHO and Kenya Ministry of Health guidelines.') ?></p>
     </div>
 </div>
 
@@ -487,33 +488,32 @@ footer {
 
     <!-- Search card -->
     <div class="search-card">
-        <h2>What symptoms are you experiencing?</h2>
-        <p>Describe your symptom or health question below. You can write in English or Kiswahili.</p>
+        <h2><?= __('What symptoms are you experiencing?') ?></h2>
+        <p><?= __('Describe your symptom or health question below. You can write in English or Kiswahili.') ?></p>
 
         <form method="POST" action="index.php" id="symptom-form">
             <div class="input-row">
                 <input type="text" name="symptom_input" id="symptom-input"
-                    placeholder="e.g. My child has fever and vomiting…"
+                    placeholder="<?= htmlspecialchars(__('e.g. My child has fever and vomiting…')) ?>"
                     value="<?= htmlspecialchars($user_input) ?>"
                     autocomplete="off">
-                <button type="submit">Get Guidance</button>
+                <button type="submit"><?= __('Get Guidance') ?></button>
             </div>
         </form>
 
-        <p class="quick-label">Quick select:</p>
+        <p class="quick-label"><?= __('Quick select:') ?></p>
         <div class="quick-pills">
-            <button type="button" class="quick-btn" onclick="setInput('Fever')">Fever</button>
-            <button type="button" class="quick-btn" onclick="setInput('Diarrhoea')">Diarrhoea</button>
-            <button type="button" class="quick-btn" onclick="setInput('Cough')">Cough</button>
-            <button type="button" class="quick-btn" onclick="setInput('Headache')">Headache</button>
-            <button type="button" class="quick-btn" onclick="setInput('Chest pain')">Chest Pain</button>
-            <button type="button" class="quick-btn" onclick="setInput('Vomiting')">Vomiting</button>
-            <button type="button" class="quick-btn" onclick="setInput('Abdominal pain')">Abdominal Pain</button>
+            <button type="button" class="quick-btn" onclick="setInput('Fever')"><?= __('Fever') ?></button>
+            <button type="button" class="quick-btn" onclick="setInput('Diarrhoea')"><?= __('Diarrhoea') ?></button>
+            <button type="button" class="quick-btn" onclick="setInput('Cough')"><?= __('Cough') ?></button>
+            <button type="button" class="quick-btn" onclick="setInput('Headache')"><?= __('Headache') ?></button>
+            <button type="button" class="quick-btn" onclick="setInput('Chest pain')"><?= __('Chest Pain') ?></button>
+            <button type="button" class="quick-btn" onclick="setInput('Vomiting')"><?= __('Vomiting') ?></button>
+            <button type="button" class="quick-btn" onclick="setInput('Abdominal pain')"><?= __('Abdominal Pain') ?></button>
         </div>
 
         <div class="disclaimer">
-            <strong>Note:</strong> This tool provides health education only — it does not diagnose conditions.
-            Always visit a health facility or contact a Community Health Worker for medical advice.
+            <strong><?= __('Note:') ?></strong> <?= __('This tool provides health education only — it does not diagnose conditions. Always visit a health facility or contact a Community Health Worker for medical advice.') ?>
         </div>
     </div>
 
@@ -530,23 +530,23 @@ footer {
         <?php if ($ml_result): ?>
             <div class="ml-card">
                 <div class="ml-card-header">
-                    <h3>ML Symptom Classifier</h3>
+                    <h3><?= __('ML Symptom Classifier') ?></h3>
                     <span class="ml-tech-badge">TF-IDF + Naive Bayes</span>
                 </div>
                 <div class="ml-card-body">
                     <p class="ml-prediction">
-                        Identified: <?= htmlspecialchars(ucwords(str_replace('_', ' ', $ml_result['predicted']))) ?>
+                        <?= sprintf(__('Identified: %s'), htmlspecialchars(__(ucwords(str_replace('_', ' ', $ml_result['predicted']))))) ?>
                     </p>
-                    <p class="ml-conf-text">Confidence: <?= (int)$ml_result['confidence'] ?>%</p>
+                    <p class="ml-conf-text"><?= sprintf(__('Confidence: %d%%'), (int)$ml_result['confidence']) ?></p>
                     <div class="conf-bar-track">
                         <div class="conf-bar-fill" style="width:<?= min(100, (int)$ml_result['confidence']) ?>%"></div>
                     </div>
                     <?php if (!empty($ml_result['top_3'])): ?>
-                        <p class="top3-label">Top predictions</p>
+                        <p class="top3-label"><?= __('Top predictions') ?></p>
                         <div class="top3-pills">
                             <?php foreach ($ml_result['top_3'] as $pred): ?>
                                 <span class="top3-pill">
-                                    <?= htmlspecialchars(ucwords(str_replace('_', ' ', $pred['symptom']))) ?>
+                                    <?= htmlspecialchars(__(ucwords(str_replace('_', ' ', $pred['symptom'])))) ?>
                                     (<?= (int)$pred['confidence'] ?>%)
                                 </span>
                             <?php endforeach; ?>
@@ -560,21 +560,21 @@ footer {
         <?php if ($ai_response): ?>
             <div class="ai-card">
                 <div class="ai-card-header">
-                    <h3>AI Health Assistant</h3>
-                    <span class="ai-badge">Based on WHO guidelines</span>
+                    <h3><?= __('AI Health Assistant') ?></h3>
+                    <span class="ai-badge"><?= __('Based on WHO guidelines') ?></span>
                 </div>
                 <div class="ai-card-body"><?= htmlspecialchars($ai_response) ?></div>
             </div>
         <?php else: ?>
             <div class="offline-banner">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                AI assistant is currently unavailable. Showing database results only.
+                <?= __('AI assistant is currently unavailable. Showing database results only.') ?>
             </div>
         <?php endif; ?>
 
         <!-- Database results -->
         <?php if (!empty($db_results)): ?>
-            <p class="db-results-label">Related guidance from our database</p>
+            <p class="db-results-label"><?= __('Related guidance from our database') ?></p>
             <?php foreach ($db_results as $entry):
                 $u = urgency_style($entry['urgency']);
             ?>
@@ -589,20 +589,20 @@ footer {
             <?php else: ?>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
             <?php endif; ?>
-            <?= $u['label'] ?>
+            <?= __($u['label']) ?>
         </span>
     </div>
     <div class="symptom-card-body">
         <div class="info-row">
-            <p class="info-row-label">Possible Causes</p>
+            <p class="info-row-label"><?= __('Possible Causes') ?></p>
             <p class="info-row-value"><?= htmlspecialchars(t($entry, 'possible_cause')) ?></p>
         </div>
         <div class="info-row">
-            <p class="info-row-label">Self Care at Home</p>
+            <p class="info-row-label"><?= __('Self Care at Home') ?></p>
             <p class="info-row-value"><?= htmlspecialchars(t($entry, 'self_care')) ?></p>
         </div>
         <div class="info-row">
-            <p class="info-row-label">When to Seek Care</p>
+            <p class="info-row-label"><?= __('When to Seek Care') ?></p>
             <p class="info-row-value"><?= htmlspecialchars(t($entry, 'when_to_seek_care')) ?></p>
         </div>
     </div>
@@ -610,8 +610,8 @@ footer {
             <?php endforeach; ?>
         <?php else: ?>
             <div class="no-results-card">
-                <p>No specific database entry found for this symptom.</p>
-                <p>Please refer to the AI response above or visit your nearest health facility.</p>
+                <p><?= __('No specific database entry found for this symptom.') ?></p>
+                <p><?= __('Please refer to the AI response above or visit your nearest health facility.') ?></p>
             </div>
         <?php endif; ?>
 
@@ -621,7 +621,7 @@ footer {
 
 <footer>
     <p>© 2026 Samburu Health Platform</p>
-    <p>Health education and basic telemedicine guidance for rural communities in Kenya</p>
+    <p><?= __('Health education and basic telemedicine guidance for rural communities in Kenya') ?></p>
 </footer>
 
 <script>
