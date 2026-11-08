@@ -195,3 +195,18 @@ function google_translate_to_sw(string $text): string
         'UTF-8'
     );
 }
+// Return interface text in the selected language, falling back to English.
+function __(string $text): string
+{
+    static $sw = null;
+
+    if (($_SESSION['language'] ?? 'english') !== 'kiswahili') {
+        return $text;
+    }
+
+    if ($sw === null) {
+        $sw = file_exists(__DIR__ . '/lang_sw.php') ? require __DIR__ . '/lang_sw.php' : [];
+    }
+
+    return $sw[$text] ?? $text;
+}

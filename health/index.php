@@ -13,16 +13,16 @@ $category = $_GET['category'] ?? 'all';
 $search   = trim($_GET['search'] ?? '');
 
 if ($category !== 'all' && !empty($search)) {
-    $stmt = $conn->prepare("SELECT * FROM health_education WHERE category = ? AND (title LIKE ? OR content LIKE ?) ORDER BY title");
+    $stmt = $conn->prepare("SELECT * FROM health_education WHERE category = ? AND (title LIKE ? OR content LIKE ? OR title_sw LIKE ? OR content_sw LIKE ?) ORDER BY title");
     $like = '%' . $search . '%';
-    $stmt->bind_param("sss", $category, $like, $like);
+    $stmt->bind_param("sssss", $category, $like, $like, $like, $like);
 } elseif ($category !== 'all') {
     $stmt = $conn->prepare("SELECT * FROM health_education WHERE category = ? ORDER BY title");
     $stmt->bind_param("s", $category);
 } elseif (!empty($search)) {
-    $stmt = $conn->prepare("SELECT * FROM health_education WHERE title LIKE ? OR content LIKE ? ORDER BY title");
+    $stmt = $conn->prepare("SELECT * FROM health_education WHERE title LIKE ? OR content LIKE ? OR title_sw LIKE ? OR content_sw LIKE ? ORDER BY title");
     $like = '%' . $search . '%';
-    $stmt->bind_param("ss", $like, $like);
+    $stmt->bind_param("ssss", $like, $like, $like, $like);
 } else {
     $stmt = $conn->prepare("SELECT * FROM health_education ORDER BY category, title");
 }
@@ -49,11 +49,12 @@ $cat_meta = [
 ];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $lang === 'kiswahili' ? 'sw' : 'en' ?>" translate="no">
 <head>
 <meta charset="UTF-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Health Education &mdash; Samburu Health</title>
+<title><?= __('Health Education') ?> &mdash; Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -354,10 +355,10 @@ footer {
         Samburu Health
     </a>
     <nav class="nav-links">
-        <a href="../dashboard/index.php">Dashboard</a>
-        <a href="index.php">Health Education</a>
-        <a href="../myth/index.php">Myth vs Fact</a>
-        <a href="../symptom/index.php">Symptoms</a>
+        <a href="../dashboard/index.php"><?= __('Dashboard') ?></a>
+        <a href="index.php"><?= __('Health Education') ?></a>
+        <a href="../myth/index.php"><?= __('Myth vs Fact') ?></a>
+        <a href="../symptom/index.php"><?= __('Symptoms') ?></a>
         <div class="lang-switcher">
             <a href="../dashboard/language.php?lang=english&redirect=<?= urlencode('../health/index.php') ?>"
                class="lang-btn <?= $lang === 'english'   ? 'active' : '' ?>">EN</a>
@@ -366,16 +367,16 @@ footer {
             <a href="../dashboard/language.php?lang=maa&redirect=<?= urlencode('../health/index.php') ?>"
                class="lang-btn <?= $lang === 'maa'       ? 'active' : '' ?>">MAA</a>
         </div>
-        <a href="../auth/logout.php" class="nav-logout">Logout</a>
+        <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
 
 <!-- Hero -->
 <div class="page-hero">
     <div class="hero-inner">
-        <p class="hero-eyebrow">Health Education</p>
-        <h1>Trusted Health Information</h1>
-        <p>Evidence-based resources based on WHO and Kenya Ministry of Health guidelines, available in English, Kiswahili, and Maa.</p>
+        <p class="hero-eyebrow"><?= __('Health Education') ?></p>
+        <h1><?= __('Trusted Health Information') ?></h1>
+        <p><?= __('Evidence-based resources based on WHO and Kenya Ministry of Health guidelines, available in English, Kiswahili, and Maa.') ?></p>
     </div>
 </div>
 
@@ -386,24 +387,24 @@ footer {
     <form method="GET" action="">
         <div class="filter-bar">
             <a href="?category=all<?= !empty($search) ? '&search='.urlencode($search) : '' ?>"
-               class="filter-btn <?= $category === 'all' ? 'active' : '' ?>">All Topics</a>
+               class="filter-btn <?= $category === 'all' ? 'active' : '' ?>""><?= __('All Topics') ?></a>
             <a href="?category=maternal<?= !empty($search) ? '&search='.urlencode($search) : '' ?>"
-               class="filter-btn <?= $category === 'maternal' ? 'active' : '' ?>">Maternal Health</a>
+               class="filter-btn <?= $category === 'maternal' ? 'active' : '' ?>""><?= __('Maternal Health') ?></a>
             <a href="?category=child<?= !empty($search) ? '&search='.urlencode($search) : '' ?>"
-               class="filter-btn <?= $category === 'child' ? 'active' : '' ?>">Child Health</a>
+               class="filter-btn <?= $category === 'child' ? 'active' : '' ?>""><?= __('Child Health') ?></a>
             <a href="?category=disease<?= !empty($search) ? '&search='.urlencode($search) : '' ?>"
-               class="filter-btn <?= $category === 'disease' ? 'active' : '' ?>">Common Diseases</a>
+               class="filter-btn <?= $category === 'disease' ? 'active' : '' ?>""><?= __('Common Diseases') ?></a>
             <a href="?category=nutrition<?= !empty($search) ? '&search='.urlencode($search) : '' ?>"
-               class="filter-btn <?= $category === 'nutrition' ? 'active' : '' ?>">Nutrition</a>
+               class="filter-btn <?= $category === 'nutrition' ? 'active' : '' ?>""><?= __('Nutrition') ?></a>
             <div class="search-form">
-                <input type="text" name="search" placeholder="Search articles&hellip;"
+                <input type="text" name="search" placeholder="<?= htmlspecialchars(__('Search articles…')) ?>"
                     value="<?= htmlspecialchars($search) ?>">
                 <input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>">
                 <button type="submit">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
-                    Search
+                    <?= __('Search') ?>
                 </button>
             </div>
         </div>
@@ -411,9 +412,9 @@ footer {
 
     <?php if (!empty($search) || $category !== 'all'): ?>
         <p class="results-info">
-            <?= count($articles) ?> article<?= count($articles) !== 1 ? 's' : '' ?> found
-            <?= $category !== 'all' ? 'in <strong>' . htmlspecialchars(ucfirst($category)) . '</strong>' : '' ?>
-            <?= !empty($search) ? 'for "<strong>' . htmlspecialchars($search) . '</strong>"' : '' ?>
+            <?= sprintf(__(count($articles) === 1 ? '%d article found' : '%d articles found'), count($articles)) ?>
+            <?= $category !== 'all' ? sprintf(__('in %s'), '<strong>' . htmlspecialchars(__($cat_meta[$category]['label'] ?? ucfirst($category))) . '</strong>') : '' ?>
+            <?= !empty($search) ? sprintf(__('for "%s"'), '<strong>' . htmlspecialchars($search) . '</strong>') : '' ?>
         </p>
     <?php endif; ?>
 
@@ -422,18 +423,17 @@ footer {
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            <h3>No articles found</h3>
-            <p>Try a different search term or browse all categories.</p>
+            <h3><?= __('No articles found') ?></h3>
+            <p><?= __('Try a different search term or browse all categories.') ?></p>
         </div>
     <?php else: ?>
         <div class="articles-grid">
-           <?php foreach ($articles as $article):
-                  $c         = get_content($article, $lang);
-                 if ($article['id'] == 1) { error_log("CARD1: lang=$lang title_sw=" . ($article['title_sw']??'NULL') . " title_maa=" . ($article['title_maa']??'NULL')); }
+            <?php foreach ($articles as $article):
+                $c         = get_content($article, $lang);
                 $preview   = substr(strip_tags($c['content']), 0, 130);
                 if (strlen(strip_tags($c['content'])) > 130) $preview .= '…';
                 $cat       = $article['category'] ?? 'general';
-                $cat_label = $cat_meta[$cat]['label'] ?? ucfirst($cat);
+                $cat_label = __($cat_meta[$cat]['label'] ?? ucfirst($cat));
             ?>
                 <div class="article-card"
                      data-title="<?= htmlspecialchars($c['title'], ENT_QUOTES) ?>"
@@ -448,7 +448,7 @@ footer {
                     <div class="article-bottom">
                         <p><?= htmlspecialchars($preview) ?></p>
                         <span class="read-link">
-                            Read more
+                            <?= __('Read more') ?>
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                             </svg>
@@ -469,7 +469,7 @@ footer {
                 <div class="modal-cat"><span class="cat-pill" id="modalCat"></span></div>
                 <h2 id="modalTitle"></h2>
             </div>
-            <button class="modal-close" onclick="closeModal()" aria-label="Close">
+            <button class="modal-close" onclick="closeModal()" aria-label="<?= __('Close') ?>">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -481,7 +481,7 @@ footer {
 
 <footer>
     <p>&copy; 2026 Samburu Health Platform</p>
-    <p>Health education and basic telemedicine guidance for rural communities in Kenya</p>
+    <p><?= __('Health education and basic telemedicine guidance for rural communities in Kenya') ?></p>
 </footer>
 
 <script>

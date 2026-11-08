@@ -49,16 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($myth_search)) {
 
 // Get all myth entries for browsing
 if ($category !== 'all' && !empty($search)) {
-    $stmt = $conn->prepare("SELECT * FROM myth_facts WHERE category = ? AND (myth LIKE ? OR fact LIKE ?) ORDER BY id");
+    $stmt = $conn->prepare("SELECT * FROM myth_facts WHERE category = ? AND (myth LIKE ? OR fact LIKE ? OR myth_sw LIKE ? OR fact_sw LIKE ?) ORDER BY id");
     $like = '%' . $search . '%';
-    $stmt->bind_param("sss", $category, $like, $like);
+    $stmt->bind_param("sssss", $category, $like, $like, $like, $like);
 } elseif ($category !== 'all') {
     $stmt = $conn->prepare("SELECT * FROM myth_facts WHERE category = ? ORDER BY id");
     $stmt->bind_param("s", $category);
 } elseif (!empty($search)) {
-    $stmt = $conn->prepare("SELECT * FROM myth_facts WHERE myth LIKE ? OR fact LIKE ? ORDER BY id");
+    $stmt = $conn->prepare("SELECT * FROM myth_facts WHERE myth LIKE ? OR fact LIKE ? OR myth_sw LIKE ? OR fact_sw LIKE ? ORDER BY id");
     $like = '%' . $search . '%';
-    $stmt->bind_param("ss", $like, $like);
+    $stmt->bind_param("ssss", $like, $like, $like, $like);
 } else {
     $stmt = $conn->prepare("SELECT * FROM myth_facts ORDER BY category, id");
 }
@@ -85,11 +85,12 @@ $cat_stmt->execute();
 $categories = $cat_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $lang === 'kiswahili' ? 'sw' : 'en' ?>" translate="no">
 <head>
 <meta charset="UTF-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Myth vs Fact — Samburu Health</title>
+<title><?= __('Myth vs Fact') ?> &mdash; Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -433,10 +434,10 @@ footer {
         Samburu Health
     </a>
     <nav class="nav-links">
-        <a href="../dashboard/index.php">Dashboard</a>
-        <a href="../health/index.php">Health Education</a>
-        <a href="index.php">Myth vs Fact</a>
-        <a href="../symptom/index.php">Symptoms</a>
+        <a href="../dashboard/index.php"><?= __('Dashboard') ?></a>
+        <a href="../health/index.php"><?= __('Health Education') ?></a>
+        <a href="index.php"><?= __('Myth vs Fact') ?></a>
+        <a href="../symptom/index.php"><?= __('Symptoms') ?></a>
         <div class="lang-switcher">
             <a href="../dashboard/language.php?lang=english&redirect=<?= urlencode('../myth/index.php') ?>"
                class="lang-btn <?= $lang === 'english'   ? 'active' : '' ?>">EN</a>
@@ -445,16 +446,16 @@ footer {
             <a href="../dashboard/language.php?lang=maa&redirect=<?= urlencode('../myth/index.php') ?>"
                class="lang-btn <?= $lang === 'maa'       ? 'active' : '' ?>">MAA</a>
         </div>
-        <a href="../auth/logout.php" class="nav-logout">Logout</a>
+        <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
 
 <!-- Hero -->
 <div class="page-hero">
     <div class="hero-inner">
-        <p class="hero-eyebrow">Myth vs Fact</p>
-        <h1>Separate Truth from Myth</h1>
-        <p>Use our AI model to check health beliefs, and browse evidence-based corrections verified against WHO and Kenya Ministry of Health guidelines.</p>
+        <p class="hero-eyebrow"><?= __('Myth vs Fact') ?></p>
+        <h1><?= __('Separate Truth from Myth') ?></h1>
+        <p><?= __('Use our AI model to check health beliefs, and browse evidence-based corrections verified against WHO and Kenya Ministry of Health guidelines.') ?></p>
     </div>
 </div>
 
@@ -469,18 +470,18 @@ footer {
                 </svg>
             </div>
             <div>
-                <h2>AI Myth Detector</h2>
-                <p>Type a health statement you have heard and our ML model will analyse whether it is a myth or a fact.</p>
+                <h2><?= __('AI Myth Detector') ?></h2>
+                <p><?= __('Type a health statement you have heard and our ML model will analyse whether it is a myth or a fact.') ?></p>
             </div>
         </div>
 
         <form method="POST" action="" id="myth-form">
             <div class="detect-row">
                 <input type="text" name="myth_input" id="myth-input"
-                    placeholder="e.g. Vaccines cause autism in children…"
+                    placeholder="<?= htmlspecialchars(__('e.g. Vaccines cause autism in children…')) ?>"
                     value="<?= htmlspecialchars($myth_search) ?>"
                     autocomplete="off">
-                <button type="submit">Check Statement</button>
+                <button type="submit"><?= __('Check Statement') ?></button>
             </div>
         </form>
 
@@ -490,28 +491,28 @@ footer {
                     <span class="ml-verdict">
                         <?php if ($ml_result['is_myth']): ?>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                            This is likely a MYTH
+                            <?= __('This is likely a MYTH') ?>
                         <?php else: ?>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
-                            This appears to be a FACT
+                            <?= __('This appears to be a FACT') ?>
                         <?php endif; ?>
                     </span>
-                    <span class="ml-conf-badge"><?= (int)$ml_result['confidence'] ?>% confidence</span>
+                    <span class="ml-conf-badge"><?= sprintf(__('%d%% confidence'), (int)$ml_result['confidence']) ?></span>
                 </div>
                 <div class="ml-result-body">
-                    <p><?= htmlspecialchars($ml_result['message']) ?></p>
+                    <p><?= htmlspecialchars(__($ml_result['message'])) ?></p>
 
                     <?php if (!empty($ml_matches)): ?>
-                        <p class="ml-matches-label">Related entries from our database</p>
+                        <p class="ml-matches-label"><?= __('Related entries from our database') ?></p>
                         <?php foreach ($ml_matches as $match):
                             $mc = get_myth_content($match, $lang);
                         ?>
                             <div class="ml-match">
                                 <p class="ml-match-myth">
-                                    <strong>Myth:</strong> <?= htmlspecialchars($mc['myth']) ?>
+                                    <strong><?= __('Myth') ?>:</strong> <?= htmlspecialchars($mc['myth']) ?>
                                 </p>
                                 <p class="ml-match-fact">
-                                    <strong>Fact:</strong> <?= htmlspecialchars($mc['fact']) ?>
+                                    <strong><?= __('Fact') ?>:</strong> <?= htmlspecialchars($mc['fact']) ?>
                                 </p>
                             </div>
                         <?php endforeach; ?>
@@ -521,7 +522,7 @@ footer {
         <?php elseif ($myth_done && !$ml_result): ?>
             <div class="ml-offline">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                ML API is currently unavailable. Make sure the Flask server is running on port 5000.
+                <?= __('ML API is currently unavailable. Make sure the Flask server is running on port 5000.') ?>
             </div>
         <?php endif; ?>
     </div>
@@ -532,19 +533,20 @@ footer {
     <form method="GET" action="">
         <div class="filter-bar">
             <a href="?category=all<?= !empty($search) ? '&search='.urlencode($search) : '' ?>"
-               class="filter-btn <?= $category === 'all' ? 'active' : '' ?>">All</a>
+               class="filter-btn <?= $category === 'all' ? 'active' : '' ?>"><?= __('All') ?></a>
             <?php foreach ($categories as $cat): ?>
                 <a href="?category=<?= urlencode($cat['category']) ?><?= !empty($search) ? '&search='.urlencode($search) : '' ?>"
                    class="filter-btn <?= $category === $cat['category'] ? 'active' : '' ?>">
-                    <?= htmlspecialchars(ucfirst($cat['category'])) ?>
+                    <?= htmlspecialchars(__(ucfirst($cat['category']))) ?>
                 </a>
             <?php endforeach; ?>
             <div class="search-form">
-                <input type="text" name="search" placeholder="Search myths…"
+                <input type="text" name="search" placeholder="<?= htmlspecialchars(__('Search myths…')) ?>"
                     value="<?= htmlspecialchars($search) ?>">
                 <input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>">
                 <button type="submit">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"><?= __('Search') ?></span>
                 </button>
             </div>
         </div>
@@ -552,9 +554,9 @@ footer {
 
     <?php if (!empty($search) || $category !== 'all'): ?>
         <p class="results-info">
-            <?= count($entries) ?> entr<?= count($entries) !== 1 ? 'ies' : 'y' ?> found
-            <?= $category !== 'all' ? 'in <strong>' . htmlspecialchars(ucfirst($category)) . '</strong>' : '' ?>
-            <?= !empty($search)     ? 'for "<strong>' . htmlspecialchars($search) . '</strong>"' : '' ?>
+            <?= sprintf(__(count($entries) === 1 ? '%d entry found' : '%d entries found'), count($entries)) ?>
+            <?= $category !== 'all' ? sprintf(__('in %s'), '<strong>' . htmlspecialchars(__(ucfirst($category))) . '</strong>') : '' ?>
+            <?= !empty($search)     ? sprintf(__('for "%s"'), '<strong>' . htmlspecialchars($search) . '</strong>') : '' ?>
         </p>
     <?php endif; ?>
 
@@ -562,8 +564,8 @@ footer {
     <?php if (empty($entries)): ?>
         <div class="no-results">
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <h3>No entries found</h3>
-            <p>Try a different search term or browse all categories.</p>
+            <h3><?= __('No entries found') ?></h3>
+            <p><?= __('Try a different search term or browse all categories.') ?></p>
         </div>
     <?php else: ?>
         <div class="myth-grid">
@@ -574,20 +576,20 @@ footer {
                     <div class="myth-half">
                         <span class="myth-badge">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            Myth
+                            <?= __('Myth') ?>
                         </span>
                         <p><?= htmlspecialchars($c['myth']) ?></p>
                     </div>
                     <div class="fact-half">
                         <span class="fact-badge">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Fact
+                            <?= __('Fact') ?>
                         </span>
                         <p><?= htmlspecialchars($c['fact']) ?></p>
                     </div>
                     <div class="myth-card-footer">
-                        <span class="cat-tag"><?= htmlspecialchars(ucfirst($entry['category'])) ?></span>
-                        <span class="source-tag">Source: WHO / Kenya MoH</span>
+                        <span class="cat-tag"><?= htmlspecialchars(__(ucfirst($entry['category']))) ?></span>
+                        <span class="source-tag"><?= __('Source: WHO / Kenya MoH') ?></span>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -597,8 +599,8 @@ footer {
 </div>
 
 <footer>
-    <p>© 2026 Samburu Health Platform</p>
-    <p>Health education and basic telemedicine guidance for rural communities in Kenya</p>
+    <p>&copy; 2026 Samburu Health Platform</p>
+    <p><?= __('Health education and basic telemedicine guidance for rural communities in Kenya') ?></p>
 </footer>
 
 </body>
