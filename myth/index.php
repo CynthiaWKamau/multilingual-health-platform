@@ -2,6 +2,7 @@
 session_start();
 include '../config/database.php';
 include '../config/translate.php';
+include '../config/activity.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
@@ -45,6 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($myth_search)) {
     $stmt->bind_param("ss", $like, $like);
     $stmt->execute();
     $ml_matches = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // Log myth check
+    $verdict = $ml_result ? (!empty($ml_result['is_myth']) ? 'myth' : 'fact') : 'unavailable';
+    log_activity($conn, 'myth_check', $myth_search, $verdict);
 }
 
 // Get all myth entries for browsing
@@ -79,6 +84,8 @@ $categories = $cat_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3d2b">
+<link rel="manifest" href="../manifest.json">
 <title><?= __('Myth vs Fact') ?> &mdash; Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -593,5 +600,6 @@ footer {
     <p><?= __('Health education and basic telemedicine guidance for rural communities in Kenya') ?></p>
 </footer>
 
+<script src="../pwa.js"></script>
 </body>
 </html>

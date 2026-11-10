@@ -40,6 +40,8 @@ $my_suggestions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3d2b">
+<link rel="manifest" href="../manifest.json">
 <title>CHW Dashboard — Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -165,7 +167,7 @@ body {
 /* ── Quick-access cards ── */
 .resource-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem; margin-bottom: 2.5rem;
 }
 .resource-card {
@@ -307,7 +309,6 @@ footer {
 }
 
 /* ── Responsive ── */
-@media (max-width: 900px) { .resource-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) {
     .resource-grid { grid-template-columns: repeat(2, 1fr); }
     .form-row { grid-template-columns: 1fr; }
@@ -328,6 +329,7 @@ footer {
     </a>
     <nav class="nav-links">
         <a href="index.php">Dashboard</a>
+        <a href="report.php">Community Report</a>
         <a href="../health/index.php">Health Education</a>
         <a href="../myth/index.php">Myth vs Fact</a>
         <a href="../symptom/index.php">Symptoms</a>
@@ -388,6 +390,15 @@ footer {
             </div>
             <h3>Symptom Guidance</h3>
             <p>Use symptom guidance to support community members.</p>
+        </a>
+        <a href="report.php" class="resource-card">
+            <div class="resource-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21H3V3"/><polyline points="7 14 11 10 14 13 20 7"/>
+                </svg>
+            </div>
+            <h3>Community Report</h3>
+            <p>Common symptoms, urgent cases and myths in your community.</p>
         </a>
         <a href="#suggest" class="resource-card">
             <div class="resource-icon">
@@ -498,5 +509,6 @@ footer {
     <p>Community Health Worker Portal</p>
 </footer>
 
+<script src="../pwa.js"></script>
 </body>
 </html>

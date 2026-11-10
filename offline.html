@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3d2b">
+<title>Offline — Samburu Health</title>
+<style>
+:root { --deep: #1a3d2b; --mid: #2d6a4f; --light: #52b788; --bg: #f8f4ec; --surface: #fff; --fg: #2c3e2d; --muted: #6b7c6d; --border: #d4cfc5; }
+@media (prefers-color-scheme: dark) {
+    :root { --bg: #0d1f14; --surface: #152a1e; --fg: #e8f0e9; --muted: #8fa892; --border: #2a4035; color-scheme: dark; }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: Poppins, system-ui, sans-serif; background: var(--bg); color: var(--fg);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 2rem max(16px, 5vw);
+}
+.card {
+    max-width: 460px; width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 16px; padding: 2rem 1.75rem; text-align: center;
+}
+.icon {
+    width: 64px; height: 64px; border-radius: 16px; background: var(--deep);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;
+}
+h1 { font-family: Lora, Georgia, serif; font-size: 1.4rem; color: var(--mid); margin-bottom: 0.5rem; }
+p { font-size: 0.9rem; color: var(--muted); line-height: 1.65; }
+.sw { margin-top: 0.75rem; font-style: italic; }
+.links { display: flex; flex-direction: column; gap: 0.6rem; margin: 1.5rem 0 1.25rem; }
+.links a {
+    display: block; padding: 0.7rem 1rem; border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--fg); text-decoration: none; font-size: 0.88rem; font-weight: 500;
+}
+.links a:hover { border-color: var(--mid); }
+button {
+    padding: 0.7rem 1.5rem; border: none; border-radius: 10px; background: var(--mid); color: #fff;
+    font: 600 0.88rem Poppins, system-ui, sans-serif; cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#52b788" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+    </div>
+    <h1>You're offline</h1>
+    <p>This page hasn't been saved on your device yet. These saved pages can still be opened:</p>
+    <p class="sw">Huna mtandao. Ukurasa huu bado haujahifadhiwa. Unaweza kufungua kurasa hizi zilizohifadhiwa:</p>
+
+    <div class="links">
+        <a href="dashboard/index.php">Dashboard · Dashibodi</a>
+        <a href="health/index.php">Health Education · Elimu ya Afya</a>
+        <a href="myth/index.php">Myth vs Fact · Dhana Potofu na Ukweli</a>
+    </div>
+
+    <button type="button" onclick="location.reload()">Try again · Jaribu tena</button>
+</div>
+</body>
+</html>

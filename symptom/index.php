@@ -2,6 +2,7 @@
 session_start();
 include '../config/database.php';
 include '../config/translate.php';
+include '../config/activity.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
@@ -101,6 +102,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['symptom_input'])) {
 
         // 3. Ask Groq AI
         $ai_response = ask_groq($user_input, $lang);
+
+        // Log symptom check
+        $rank    = ['low' => 1, 'medium' => 2, 'high' => 3];
+        $urgency = $ml_result['urgency'] ?? null;
+        if (!isset($rank[$urgency])) {
+            $urgency = null;
+            foreach ($db_results as $r) {
+                if (isset($rank[$r['urgency']]) && ($urgency === null || $rank[$r['urgency']] > $rank[$urgency])) {
+                    $urgency = $r['urgency'];
+                }
+            }
+        }
+        $label = !empty($ml_result['predicted'])
+            ? ucwords(str_replace('_', ' ', $ml_result['predicted']))
+            : $user_input;
+        log_activity($conn, 'symptom_check', $label, $urgency ?? 'unknown');
     }
 }
 
@@ -118,6 +135,8 @@ function urgency_style($urgency) {
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3d2b">
+<link rel="manifest" href="../manifest.json">
 <title><?= __('Symptom Guidance') ?> — Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -631,5 +650,6 @@ function setInput(val) {
     document.getElementById('symptom-form').submit();
 }
 </script>
+<script src="../pwa.js"></script>
 </body>
 </html>

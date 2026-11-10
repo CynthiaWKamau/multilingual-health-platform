@@ -51,6 +51,8 @@ $lang_label = ['english' => 'English', 'kiswahili' => 'Kiswahili', 'maa' => 'Maa
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3d2b">
+<link rel="manifest" href="../manifest.json">
 <title><?= __('Dashboard') ?> — Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -486,6 +488,21 @@ footer {
             </span>
         </a>
 
+        <a href="my_activity.php" class="res-card">
+            <div class="res-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+            </div>
+            <h3><?= __('My Activity') ?></h3>
+            <p><?= __('See your past symptom checks, myth checks and the articles you have read.') ?></p>
+            <span class="res-arrow"><?= __('Explore') ?>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+            </span>
+        </a>
+
         <?php if ($role === 'admin'): ?>
         <a href="../admin/index.php" class="res-card admin-card">
             <div class="res-icon purple">
@@ -504,6 +521,20 @@ footer {
         <?php endif; ?>
 
         <?php if ($role === 'chw'): ?>
+        <a href="../chw/report.php" class="res-card chw-card">
+            <div class="res-icon gold">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9913d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21H3V3"/><polyline points="7 14 11 10 14 13 20 7"/>
+                </svg>
+            </div>
+            <h3><?= __('Community Report') ?></h3>
+            <p><?= __('See what your community is checking: common symptoms, urgent cases and myths.') ?></p>
+            <span class="res-arrow" style="color:var(--gold)"><?= __('Open Report') ?>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+            </span>
+        </a>
         <a href="../chw/index.php" class="res-card chw-card">
             <div class="res-icon gold">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9913d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -602,5 +633,6 @@ footer {
     <p><?= __('Health education and basic telemedicine guidance for rural communities in Kenya') ?></p>
 </footer>
 
+<script src="../pwa.js"></script>
 </body>
 </html>

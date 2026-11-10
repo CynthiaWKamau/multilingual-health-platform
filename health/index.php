@@ -49,6 +49,8 @@ $cat_meta = [
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3d2b">
+<link rel="manifest" href="../manifest.json">
 <title><?= __('Health Education') ?> &mdash; Samburu Health</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -432,6 +434,7 @@ footer {
                 $cat_label = __($cat_meta[$cat]['label'] ?? ucfirst($cat));
             ?>
                 <div class="article-card"
+                     data-id="<?= (int)$article['id'] ?>"
                      data-title="<?= htmlspecialchars($c['title'], ENT_QUOTES) ?>"
                      data-content="<?= htmlspecialchars($c['content'], ENT_QUOTES) ?>"
                      data-cat="<?= htmlspecialchars($cat_label, ENT_QUOTES) ?>"
@@ -489,6 +492,9 @@ function openModal(el) {
     catEl.className   = 'cat-pill';
     document.getElementById('modalOverlay').classList.add('active');
     document.body.style.overflow = 'hidden';
+    if (navigator.onLine) {
+        fetch('log_view.php', { method: 'POST', body: new URLSearchParams({ id: el.dataset.id }), keepalive: true }).catch(() => {});
+    }
 }
 function closeModal() {
     document.getElementById('modalOverlay').classList.remove('active');
@@ -499,5 +505,6 @@ function closeModalOutside(e) {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 </script>
+<script src="../pwa.js"></script>
 </body>
 </html>

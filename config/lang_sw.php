@@ -1,8 +1,8 @@
 <?php
-// Kiswahili translations of the interface text, keyed by the English text.
+// Kiswahili interface text
 
 return [
-    // ── Navigation & shared ──
+    // Navigation
     'Dashboard'        => 'Dashibodi',
     'Health Education' => 'Elimu ya Afya',
     'Myth vs Fact'     => 'Dhana Potofu na Ukweli',
@@ -18,7 +18,7 @@ return [
     'in %s'     => 'katika %s',
     'for "%s"'  => 'kwa "%s"',
 
-    // ── Health Education page ──
+    // Health Education
     'Trusted Health Information' => 'Taarifa za Afya za Kuaminika',
     'Evidence-based resources based on WHO and Kenya Ministry of Health guidelines, available in English, Kiswahili, and Maa.'
         => 'Taarifa zinazotokana na ushahidi wa kitaalamu, kwa kufuata miongozo ya Shirika la Afya Duniani (WHO) na Wizara ya Afya ya Kenya, zinazopatikana kwa Kiingereza, Kiswahili na Kimaa.',
@@ -33,7 +33,7 @@ return [
     '%d article found'  => 'Makala %d imepatikana',
     '%d articles found' => 'Makala %d zimepatikana',
 
-    // ── Myth vs Fact page ──
+    // Myth vs Fact
     'Separate Truth from Myth' => 'Tofautisha Ukweli na Dhana Potofu',
     'Use our AI model to check health beliefs, and browse evidence-based corrections verified against WHO and Kenya Ministry of Health guidelines.'
         => 'Tumia mfumo wetu wa akili bandia (AI) kukagua imani kuhusu afya, na usome masahihisho yaliyothibitishwa kwa miongozo ya WHO na Wizara ya Afya ya Kenya.',
@@ -112,7 +112,7 @@ return [
     'Kiswahili'          => 'Kiswahili',
     'Maa'                => 'Kimaa',
 
-    // Symptom Guidance page
+    // Symptom Guidance
     'AI-Powered Health Guidance' => 'Ushauri wa Afya kwa Kutumia AI',
     'Describe your symptoms and get evidence-based advice from our ML classifier and AI health assistant, grounded in WHO and Kenya Ministry of Health guidelines.'
         => 'Eleza dalili zako upate ushauri wa kitaalamu kutoka kwa kiainishi chetu cha ML na msaidizi wa afya wa AI, kwa kufuata miongozo ya WHO na Wizara ya Afya ya Kenya.',
@@ -151,4 +151,36 @@ return [
     'No specific database entry found for this symptom.' => 'Hakuna taarifa maalum iliyopatikana kwa dalili hii.',
     'Please refer to the AI response above or visit your nearest health facility.'
         => 'Tafadhali angalia jibu la AI hapo juu au tembelea kituo cha afya kilicho karibu nawe.',
+
+    // My Activity
+    'My Activity'          => 'Shughuli Zangu',
+    'Your health activity' => 'Shughuli zako za afya',
+    'A record of your symptom checks, myth checks and the articles you have read.'
+        => 'Kumbukumbu ya dalili ulizokagua, dhana potofu ulizokagua na makala ulizosoma.',
+    'See your past symptom checks, myth checks and the articles you have read.'
+        => 'Angalia dalili ulizokagua, dhana potofu ulizokagua na makala ulizosoma.',
+    'Last %d days'         => 'Siku %d zilizopita',
+    'Only you can see this detailed list.' => 'Ni wewe pekee unayeweza kuona orodha hii kamili.',
+    'Symptom Checks'       => 'Ukaguzi wa Dalili',
+    'Myth Checks'          => 'Ukaguzi wa Dhana Potofu',
+    'Articles Read'        => 'Makala Zilizosomwa',
+    'No symptom checks in this period.' => 'Hakuna ukaguzi wa dalili katika kipindi hiki.',
+    'No myth checks in this period.'    => 'Hakuna ukaguzi wa dhana potofu katika kipindi hiki.',
+    'No articles read in this period.'  => 'Hakuna makala zilizosomwa katika kipindi hiki.',
+    'Date'       => 'Tarehe',
+    'Symptom'    => 'Dalili',
+    'Urgency'    => 'Uharaka',
+    'Statement'  => 'Kauli',
+    'Result'     => 'Matokeo',
+    'Article'    => 'Makala',
+    'Times Read' => 'Mara Ilizosomwa',
+    'Last Read'  => 'Ilisomwa Mwisho',
+    'High'       => 'Juu',
+    'Medium'     => 'Wastani',
+    'Low'        => 'Chini',
+    'Unknown'    => 'Haijulikani',
+    'Community Report' => 'Ripoti ya Jamii',
+    'See what your community is checking: common symptoms, urgent cases and myths.'
+        => 'Angalia jamii yako inakagua nini: dalili za kawaida, hali za dharura na dhana potofu.',
+    'Open Report' => 'Fungua Ripoti',
 ];

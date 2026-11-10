@@ -325,6 +325,7 @@ footer {
                 <span class="nav-badge"><?= $pending_suggestions ?></span>
             <?php endif; ?>
         </a>
+        <a href="reports.php">Reports</a>
         <a href="../health/index.php">View Platform</a>
         <a href="../auth/logout.php" class="nav-logout">Logout</a>
     </nav>
@@ -431,6 +432,24 @@ footer {
                 <?php endif; ?>
             </h3>
             <p>Review content suggestions submitted by Community Health Workers.</p>
+        </a>
+        <a href="reports.php" class="admin-card">
+            <div class="admin-card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5c6bc0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21H3V3"/><polyline points="7 14 11 10 14 13 20 7"/>
+                </svg>
+            </div>
+            <h3>Platform Reports</h3>
+            <p>Users, activity, health trends and content, with Excel export.</p>
+        </a>
+        <a href="../chw/report.php" class="admin-card">
+            <div class="admin-card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5c6bc0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+            </div>
+            <h3>Community Health Report</h3>
+            <p>The anonymous report Community Health Workers see.</p>
         </a>
         <a href="../health/index.php" class="admin-card">
             <div class="admin-card-icon">
