@@ -198,15 +198,19 @@ function google_translate_to_sw(string $text): string
 // Return interface text in the selected language, falling back to English.
 function __(string $text): string
 {
-    static $sw = null;
+    static $dicts = [];
 
-    if (($_SESSION['language'] ?? 'english') !== 'kiswahili') {
+    $lang  = $_SESSION['language'] ?? 'english';
+    $files = ['kiswahili' => 'lang_sw.php', 'maa' => 'lang_maa.php'];
+
+    if (!isset($files[$lang])) {
         return $text;
     }
 
-    if ($sw === null) {
-        $sw = file_exists(__DIR__ . '/lang_sw.php') ? require __DIR__ . '/lang_sw.php' : [];
+    if (!isset($dicts[$lang])) {
+        $path = __DIR__ . '/' . $files[$lang];
+        $dicts[$lang] = file_exists($path) ? require $path : [];
     }
 
-    return $sw[$text] ?? $text;
+    return $dicts[$lang][$text] ?? $text;
 }
