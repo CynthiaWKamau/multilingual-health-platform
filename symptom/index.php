@@ -38,7 +38,7 @@ function ask_groq($question, $lang) {
 
     $lang_instruction = match($lang) {
         'kiswahili' => 'Respond in Kiswahili.',
-        'maa'       => 'Respond in simple English.',
+        'maa'       => 'Respond in simple Kiswahili.',
         default     => 'Respond in English.'
     };
 
@@ -113,7 +113,7 @@ function urgency_style($urgency) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="<?= $lang === 'kiswahili' ? 'sw' : 'en' ?>" translate="no">
+<html lang="<?= $lang === 'english' ? 'en' : 'sw' ?>" translate="no">
 <head>
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
@@ -474,6 +474,7 @@ footer {
         <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
+<?= maa_notice() ?>
 
 <!-- Hero -->
 <div class="page-hero">

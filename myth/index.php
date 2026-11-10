@@ -66,18 +66,7 @@ $stmt->execute();
 $entries = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 function get_myth_content($entry, $lang) {
-    if ($lang === 'kiswahili') {
-        return [
-            'myth' => !empty($entry['myth_sw'])  ? $entry['myth_sw']  : $entry['myth'],
-            'fact' => !empty($entry['fact_sw'])  ? $entry['fact_sw']  : $entry['fact'],
-        ];
-    } elseif ($lang === 'maa') {
-        return [
-            'myth' => !empty($entry['myth_maa']) ? $entry['myth_maa'] : $entry['myth'],
-            'fact' => !empty($entry['fact_maa']) ? $entry['fact_maa'] : $entry['fact'],
-        ];
-    }
-    return ['myth' => $entry['myth'], 'fact' => $entry['fact']];
+    return ['myth' => t($entry, 'myth'), 'fact' => t($entry, 'fact')];
 }
 
 $cat_stmt = $conn->prepare("SELECT DISTINCT category FROM myth_facts ORDER BY category");
@@ -85,7 +74,7 @@ $cat_stmt->execute();
 $categories = $cat_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
-<html lang="<?= $lang === 'kiswahili' ? 'sw' : 'en' ?>" translate="no">
+<html lang="<?= $lang === 'english' ? 'en' : 'sw' ?>" translate="no">
 <head>
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
@@ -449,6 +438,7 @@ footer {
         <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
+<?= maa_notice() ?>
 
 <!-- Hero -->
 <div class="page-hero">

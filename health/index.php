@@ -32,12 +32,7 @@ $result   = $stmt->get_result();
 $articles = $result->fetch_all(MYSQLI_ASSOC);
 
 function get_content($article, $lang) {
-    if ($lang === 'kiswahili' && !empty($article['content_sw'])) {
-        return ['title' => $article['title_sw'] ?? $article['title'], 'content' => $article['content_sw']];
-    } elseif ($lang === 'maa' && !empty($article['content_maa'])) {
-        return ['title' => $article['title_maa'] ?? $article['title'], 'content' => $article['content_maa']];
-    }
-    return ['title' => $article['title'], 'content' => $article['content']];
+    return ['title' => t($article, 'title'), 'content' => t($article, 'content')];
 }
 
 // Category meta
@@ -49,7 +44,7 @@ $cat_meta = [
 ];
 ?>
 <!DOCTYPE html>
-<html lang="<?= $lang === 'kiswahili' ? 'sw' : 'en' ?>" translate="no">
+<html lang="<?= $lang === 'english' ? 'en' : 'sw' ?>" translate="no">
 <head>
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
@@ -370,6 +365,7 @@ footer {
         <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
+<?= maa_notice() ?>
 
 <!-- Hero -->
 <div class="page-hero">

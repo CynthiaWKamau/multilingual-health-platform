@@ -33,9 +33,7 @@ $ra = $conn->query(
 if ($ra) $recent_arts = $ra->fetch_all(MYSQLI_ASSOC);
 
 function art_title($a, $lang) {
-    if ($lang === 'kiswahili' && !empty($a['title_sw'])) return $a['title_sw'];
-    if ($lang === 'maa'       && !empty($a['title_maa'])) return $a['title_maa'];
-    return $a['title'];
+    return t($a, 'title');
 }
 
 $cat_color = [
@@ -48,7 +46,7 @@ $cat_color = [
 $lang_label = ['english' => 'English', 'kiswahili' => 'Kiswahili', 'maa' => 'Maa'];
 ?>
 <!DOCTYPE html>
-<html lang="<?= $language === 'kiswahili' ? 'sw' : 'en' ?>" translate="no">
+<html lang="<?= $language === 'english' ? 'en' : 'sw' ?>" translate="no">
 <head>
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
@@ -392,6 +390,7 @@ footer {
         <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
+<?= maa_notice() ?>
 
 <!-- Hero -->
 <section class="hero">

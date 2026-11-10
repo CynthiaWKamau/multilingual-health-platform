@@ -10,19 +10,22 @@ function t(array $row, string $field, bool $lazy_maa = false, string $table = ''
 {
     $lang = $_SESSION['language'] ?? 'english';
 
-    // Select the appropriate language column.
-    $suffix = match ($lang) {
-        'kiswahili' => '_sw',
-        'maa'       => '_maa',
-        default     => '',
+    // Columns to check
+    $suffixes = match ($lang) {
+        'kiswahili' => ['_sw'],
+        'maa'       => ['_maa', '_sw'],
+        default     => [],
     };
 
-    $col_lang = $field . $suffix;
+    $col_lang = $field . '_maa';
     $col_english = $field;
 
-    // Return the saved translation if available.
-    if ($suffix !== '' && !empty($row[$col_lang])) {
-        return $row[$col_lang];
+    // Return first available translation
+    foreach ($suffixes as $suffix) {
+        $value = $row[$field . $suffix] ?? '';
+        if ($value !== '' && $value !== ($row[$col_english] ?? '')) {
+            return $value;
+        }
     }
 
     // Generate and save a missing Maa translation.
@@ -195,22 +198,38 @@ function google_translate_to_sw(string $text): string
         'UTF-8'
     );
 }
-// Return interface text in the selected language, falling back to English.
+// Interface text translation
 function __(string $text): string
 {
     static $dicts = [];
 
     $lang  = $_SESSION['language'] ?? 'english';
-    $files = ['kiswahili' => 'lang_sw.php', 'maa' => 'lang_maa.php'];
+    $order = [
+        'kiswahili' => ['lang_sw.php'],
+        'maa'       => ['lang_maa.php', 'lang_sw.php'],
+    ];
 
-    if (!isset($files[$lang])) {
-        return $text;
+    foreach ($order[$lang] ?? [] as $file) {
+        if (!isset($dicts[$file])) {
+            $path = __DIR__ . '/' . $file;
+            $dicts[$file] = file_exists($path) ? require $path : [];
+        }
+        if (isset($dicts[$file][$text])) {
+            return $dicts[$file][$text];
+        }
     }
 
-    if (!isset($dicts[$lang])) {
-        $path = __DIR__ . '/' . $files[$lang];
-        $dicts[$lang] = file_exists($path) ? require $path : [];
+    return $text;
+}
+
+// Maa notice banner
+function maa_notice(): string
+{
+    if (($_SESSION['language'] ?? '') !== 'maa') {
+        return '';
     }
 
-    return $dicts[$lang][$text] ?? $text;
+    return '<div style="background:#c9913d;color:#fff;padding:10px max(16px,5vw);font-size:0.85rem;line-height:1.55">'
+         . 'Karibu. Tunaendelea kuandaa maudhui kwa Kimaa. Kwa sasa unaweza kusoma kwa Kiswahili.'
+         . '<br><span style="opacity:.85">Welcome. We are still preparing content in Maa. For now, you can read it in Kiswahili.</span></div>';
 }
