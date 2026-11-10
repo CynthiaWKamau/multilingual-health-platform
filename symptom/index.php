@@ -1,4 +1,32 @@
 <?php
+// Converts AI markdown into simple HTML
+if (!function_exists('format_ai_text')) {
+    function format_ai_text($text) {
+        $safe  = htmlspecialchars($text);
+        $safe  = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $safe);
+        $lines = explode("\n", $safe);
+        $html  = '';
+        $inList = false;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            // Bullet line
+            if (preg_match('/^[\*\-]\s+(.*)$/', $line, $m)) {
+                if (!$inList) { $html .= '<ul>'; $inList = true; }
+                $html .= '<li>' . $m[1] . '</li>';
+                continue;
+            }
+            if ($inList) { $html .= '</ul>'; $inList = false; }
+            // Normal line
+            if ($line !== '') {
+                $html .= '<p>' . $line . '</p>';
+            }
+        }
+        if ($inList) { $html .= '</ul>'; }
+
+        return $html;
+    }
+}
 session_start();
 include '../config/database.php';
 include '../config/translate.php';
@@ -583,7 +611,7 @@ footer {
                     <h3><?= __('AI Health Assistant') ?></h3>
                     <span class="ai-badge"><?= __('Based on WHO guidelines') ?></span>
                 </div>
-                <div class="ai-card-body"><?= htmlspecialchars($ai_response) ?></div>
+                <div class="ai-card-body"><?= format_ai_text($ai_response) ?></div>
             </div>
         <?php else: ?>
             <div class="offline-banner">
