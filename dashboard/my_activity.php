@@ -48,6 +48,34 @@ $articles = report_rows($conn,
 
 $urgency_label = ['high' => __('High'), 'medium' => __('Medium'), 'low' => __('Low')];
 $verdict_label = ['myth' => __('Myth'), 'fact' => __('Fact')];
+$type_label    = ['symptom_check' => __('Symptom check'), 'myth_check' => __('Myth check'), 'article_view' => __('Article read')];
+
+// CSV export
+if (($_GET['export'] ?? '') === 'csv') {
+    $rows = report_rows($conn,
+        "SELECT a.activity_type, a.detail, a.result, a.created_at,
+                h.title, h.title_sw, h.title_maa
+         FROM activity_log a LEFT JOIN health_education h ON h.id = a.ref_id
+         WHERE a.user_id = ? AND a.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+         ORDER BY a.created_at DESC",
+        'ii', $uid, $days);
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="my-activity-' . date('Y-m-d') . '.csv"');
+    $out = fopen('php://output', 'w');
+    fwrite($out, "\xEF\xBB\xBF");
+    fputcsv($out, [__('My Activity'), $_SESSION['full_name'] ?? '', sprintf(__('Last %d days'), $days)]);
+    fputcsv($out, []);
+    fputcsv($out, [__('Date'), __('Activity'), __('Details'), __('Result')]);
+    foreach ($rows as $r) {
+        $detail = $r['activity_type'] === 'article_view' && $r['title'] !== null ? t($r, 'title') : __($r['detail']);
+        $result = $r['activity_type'] === 'symptom_check' ? ($urgency_label[$r['result']] ?? __('Unknown'))
+                : ($r['activity_type'] === 'myth_check' ? ($verdict_label[$r['result']] ?? __('Unknown')) : '');
+        fputcsv($out, [date('Y-m-d H:i', strtotime($r['created_at'])), $type_label[$r['activity_type']] ?? $r['activity_type'], $detail, $result]);
+    }
+    fclose($out);
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang === 'english' ? 'en' : 'sw' ?>" translate="no">
@@ -102,8 +130,13 @@ $verdict_label = ['myth' => __('Myth'), 'fact' => __('Fact')];
                 <a href="?days=<?= $d ?>" class="<?= $days === $d ? 'active' : '' ?>"><?= sprintf(__('Last %d days'), $d) ?></a>
             <?php endforeach; ?>
         </div>
-        <p class="note"><?= __('Only you can see this detailed list.') ?></p>
+        <div class="actions">
+            <a class="btn" href="?days=<?= $days ?>&export=csv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <?= __('Download for Excel') ?></a>
+            <button type="button" class="btn" onclick="window.print()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> <?= __('Save as PDF') ?></button>
+        </div>
     </div>
+
+    <p class="note"><?= __('Only you can see this detailed list.') ?></p>
 
     <div class="stats">
         <div class="stat">

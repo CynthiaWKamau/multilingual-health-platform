@@ -183,4 +183,19 @@ return [
     'See what your community is checking: common symptoms, urgent cases and myths.'
         => 'Angalia jamii yako inakagua nini: dalili za kawaida, hali za dharura na dhana potofu.',
     'Open Report' => 'Fungua Ripoti',
+
+    // Dashboard activity
+    'Your Recent Activity' => 'Shughuli Zako za Hivi Karibuni',
+    'Your latest symptom checks, myth checks and articles read.' => 'Dalili, dhana potofu na makala ulizokagua au kusoma hivi karibuni.',
+    'No activity yet. Try the symptom checker or read a health article.' => 'Bado hakuna shughuli. Jaribu kukagua dalili au soma makala ya afya.',
+    'View all activity' => 'Angalia shughuli zote',
+    'Symptom check'     => 'Ukaguzi wa dalili',
+    'Myth check'        => 'Ukaguzi wa dhana',
+    'Article read'      => 'Makala',
+
+    // Downloads
+    'Download for Excel' => 'Pakua kwa Excel',
+    'Save as PDF' => 'Hifadhi kama PDF',
+    'Activity' => 'Shughuli',
+    'Details' => 'Maelezo',
 ];

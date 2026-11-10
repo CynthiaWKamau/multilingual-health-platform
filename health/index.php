@@ -102,7 +102,7 @@ body {
     position: sticky; top: 0; z-index: 200;
     background: var(--green-deep);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 clamp(1rem, 5vw, 3rem); height: 64px;
+    padding: 0 clamp(1rem, 5vw, 3rem); min-height: 64px; flex-wrap: wrap; gap: 0.5rem 1rem; padding-block: 0.5rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.25);
 }
 .logo {
@@ -110,7 +110,7 @@ body {
     color: var(--white); display: flex; align-items: center; gap: 10px;
     text-decoration: none; flex-shrink: 0;
 }
-.nav-links { display: flex; align-items: center; gap: 1.1rem; }
+.nav-links { display: flex; align-items: center; gap: 0.6rem 1.1rem; flex-wrap: wrap; }
 .nav-links a {
     color: rgba(255,255,255,0.82); text-decoration: none;
     font-size: 0.83rem; font-weight: 500; white-space: nowrap;

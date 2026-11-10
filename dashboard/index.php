@@ -2,6 +2,7 @@
 session_start();
 include '../config/database.php';
 include '../config/translate.php';
+include '../config/activity.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
@@ -44,6 +45,33 @@ $cat_color = [
 ];
 
 $lang_label = ['english' => 'English', 'kiswahili' => 'Kiswahili', 'maa' => 'Maa'];
+
+// Recent activity
+activity_table($conn);
+$my_recent = report_rows($conn,
+    "SELECT a.activity_type, a.detail, a.result, a.created_at, h.title, h.title_sw, h.title_maa
+     FROM activity_log a LEFT JOIN health_education h ON h.id = a.ref_id
+     WHERE a.user_id = ? ORDER BY a.created_at DESC LIMIT 5",
+    'i', $user_id);
+$my_counts = ['symptom_check' => 0, 'myth_check' => 0, 'article_view' => 0];
+foreach (report_rows($conn,
+    "SELECT activity_type, COUNT(*) AS n FROM activity_log
+     WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY activity_type",
+    'i', $user_id) as $r) {
+    $my_counts[$r['activity_type']] = (int)$r['n'];
+}
+$activity_meta = [
+    'symptom_check' => ['label' => __('Symptom check'), 'color' => '#1a5ca8'],
+    'myth_check'    => ['label' => __('Myth check'),    'color' => '#b5446e'],
+    'article_view'  => ['label' => __('Article read'),  'color' => '#2d7d46'],
+];
+$result_meta = [
+    'high'   => [__('High'),   '#b5294a'],
+    'medium' => [__('Medium'), '#b56a00'],
+    'low'    => [__('Low'),    '#1a7c4a'],
+    'myth'   => [__('Myth'),   '#b5294a'],
+    'fact'   => [__('Fact'),   '#1a7c4a'],
+];
 ?>
 <!DOCTYPE html>
 <html lang="<?= $language === 'english' ? 'en' : 'sw' ?>" translate="no">
@@ -108,7 +136,7 @@ body {
     position: sticky; top: 0; z-index: 200;
     background: var(--green-deep);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 clamp(1rem, 5vw, 3rem); height: 64px;
+    padding: 0 clamp(1rem, 5vw, 3rem); min-height: 64px; flex-wrap: wrap; gap: 0.5rem 1rem; padding-block: 0.5rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.25);
 }
 .logo {
@@ -116,7 +144,7 @@ body {
     color: var(--white); display: flex; align-items: center; gap: 10px;
     text-decoration: none; flex-shrink: 0;
 }
-.nav-links { display: flex; align-items: center; gap: 1.1rem; }
+.nav-links { display: flex; align-items: center; gap: 0.6rem 1.1rem; flex-wrap: wrap; }
 .nav-links a {
     color: rgba(255,255,255,0.82); text-decoration: none;
     font-size: 0.83rem; font-weight: 500; white-space: nowrap; transition: color 0.2s;
@@ -298,6 +326,31 @@ body {
 }
 .recent-date { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
 
+.activity-summary {
+    display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem;
+}
+.activity-chip {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 20px; padding: 5px 14px; font-size: 0.8rem; color: var(--text-muted);
+}
+.activity-chip strong { color: var(--green-mid); font-size: 0.9rem; margin-right: 3px; }
+.recent-type {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    flex-shrink: 0; min-width: 96px;
+}
+.recent-detail { flex: 1; min-width: 0; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.view-all {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 1rem;
+    font-size: 0.84rem; font-weight: 600; color: var(--green-mid); text-decoration: none;
+}
+.view-all:hover { text-decoration: underline; }
+.activity-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+@media (max-width: 640px) {
+    .recent-type { min-width: 0; }
+    .recent-item.activity { flex-wrap: wrap; }
+    .recent-item.activity .recent-detail { flex-basis: 100%; order: 3; white-space: normal; }
+}
+
 .no-recent {
     background: var(--surface); border: 1.5px dashed var(--border);
     border-radius: 10px; padding: 1.5rem; text-align: center;
@@ -389,6 +442,7 @@ footer {
         <a href="../health/index.php"><?= __('Health Education') ?></a>
         <a href="../myth/index.php"><?= __('Myth vs Fact') ?></a>
         <a href="../symptom/index.php"><?= __('Symptoms') ?></a>
+        <a href="my_activity.php"><?= __('My Activity') ?></a>
         <a href="../auth/logout.php" class="nav-logout"><?= __('Logout') ?></a>
     </nav>
 </header>
@@ -554,6 +608,57 @@ footer {
         </a>
         <?php endif; ?>
 
+    </div>
+</section>
+
+<!-- Recent activity -->
+<section class="section">
+    <div class="section-head">
+        <p class="section-label"><?= __('My Activity') ?></p>
+        <h2><?= __('Your Recent Activity') ?></h2>
+        <p class="section-desc"><?= __('Your latest symptom checks, myth checks and articles read.') ?></p>
+    </div>
+
+    <div class="activity-summary">
+        <span class="activity-chip"><strong><?= $my_counts['symptom_check'] ?></strong> <?= __('Symptom Checks') ?></span>
+        <span class="activity-chip"><strong><?= $my_counts['myth_check'] ?></strong> <?= __('Myth Checks') ?></span>
+        <span class="activity-chip"><strong><?= $my_counts['article_view'] ?></strong> <?= __('Articles Read') ?></span>
+        <span class="activity-chip"><?= sprintf(__('Last %d days'), 30) ?></span>
+    </div>
+
+    <?php if (empty($my_recent)): ?>
+        <div class="no-recent"><?= __('No activity yet. Try the symptom checker or read a health article.') ?></div>
+    <?php else: ?>
+        <div class="recent-list">
+            <?php foreach ($my_recent as $act):
+                $meta   = $activity_meta[$act['activity_type']];
+                $detail = $act['activity_type'] === 'article_view' && $act['title'] !== null ? t($act, 'title') : __($act['detail']);
+                $res    = $result_meta[$act['result']] ?? null;
+            ?>
+                <a href="my_activity.php" class="recent-item activity">
+                    <span class="recent-dot" style="background:<?= $meta['color'] ?>"></span>
+                    <span class="recent-type" style="color:<?= $meta['color'] ?>"><?= htmlspecialchars($meta['label']) ?></span>
+                    <span class="recent-detail"><?= htmlspecialchars($detail) ?></span>
+                    <?php if ($res): ?>
+                        <span class="recent-cat" style="color:<?= $res[1] ?>;background:<?= $res[1] ?>18"><?= htmlspecialchars($res[0]) ?></span>
+                    <?php endif; ?>
+                    <span class="recent-date"><?= date('d M Y', strtotime($act['created_at'])) ?></span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="activity-links">
+        <a href="my_activity.php" class="view-all"><?= __('View all activity') ?>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+        </a>
+        <a href="my_activity.php?days=30&export=csv" class="view-all"><?= __('Download for Excel') ?>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+        </a>
     </div>
 </section>
 

@@ -75,6 +75,42 @@ foreach (report_rows($conn,
 }
 
 $back = $_SESSION['role'] === 'admin' ? '../admin/index.php' : 'index.php';
+
+// CSV export
+if (($_GET['export'] ?? '') === 'csv') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="community-health-report-' . date('Y-m-d') . "-{$days}days.csv\"");
+    $out = fopen('php://output', 'w');
+    fwrite($out, "\xEF\xBB\xBF");
+    fputcsv($out, ['Community Health Report', "Last $days days", 'Generated ' . date('d M Y H:i')]);
+    fputcsv($out, []);
+    fputcsv($out, ['Section', 'Item', 'Count']);
+    fputcsv($out, ['Summary', 'Active users', (int)($sum['people'] ?? 0)]);
+    fputcsv($out, ['Summary', 'Symptom checks', (int)($sum['symptoms'] ?? 0)]);
+    fputcsv($out, ['Summary', 'High urgency', (int)($sum['high'] ?? 0)]);
+    fputcsv($out, ['Summary', 'Myth checks', (int)($sum['myths'] ?? 0)]);
+    fputcsv($out, ['Summary', 'Articles read', (int)($sum['views'] ?? 0)]);
+    $sections = [
+        'Most checked symptoms'    => array_map(fn($r) => ['label' => $r['detail'], 'n' => $r['n']], $top_symptoms),
+        'Symptom urgency'          => $urgency,
+        'Identified as myths'      => array_map(fn($r) => ['label' => $r['detail'], 'n' => $r['n']], $top_myths),
+        'Myth checker results'     => $verdicts,
+        'Most read articles'       => array_map(fn($r) => ['label' => $r['title'], 'n' => $r['n']], $top_articles),
+        'Languages used'           => $languages,
+    ];
+    foreach ($sections as $section => $rows) {
+        foreach ($rows as $r) {
+            fputcsv($out, [$section, $r['label'], $r['n']]);
+        }
+    }
+    fputcsv($out, []);
+    fputcsv($out, ['High-urgency checks', 'Date', 'Symptom', 'Language']);
+    foreach ($high_cases as $c) {
+        fputcsv($out, ['', date('Y-m-d H:i', strtotime($c['created_at'])), $c['detail'], $lang_names[$c['language']] ?? $c['language']]);
+    }
+    fclose($out);
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -123,8 +159,13 @@ $back = $_SESSION['role'] === 'admin' ? '../admin/index.php' : 'index.php';
                 <a href="?days=<?= $d ?>" class="<?= $days === $d ? 'active' : '' ?>">Last <?= $d ?> days</a>
             <?php endforeach; ?>
         </div>
-        <p class="note">No names are shown. Individual users cannot be identified from this report.</p>
+        <div class="actions">
+            <a class="btn" href="?days=<?= $days ?>&export=csv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download for Excel</a>
+            <button type="button" class="btn" onclick="window.print()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Save as PDF</button>
+        </div>
     </div>
+
+    <p class="note">No names are shown. Individual users cannot be identified from this report.</p>
 
     <div class="stats">
         <div class="stat"><div class="stat-num"><?= (int)($sum['people'] ?? 0) ?></div><div class="stat-label">Active Users</div></div>

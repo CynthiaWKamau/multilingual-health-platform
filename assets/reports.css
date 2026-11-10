@@ -124,6 +124,9 @@ body {
 .period a.active { background: var(--accent-mid); border-color: var(--accent-mid); color: var(--white); }
 .btn { border-radius: 8px; font-weight: 600; color: var(--accent-mid); display: inline-flex; align-items: center; gap: 6px; }
 .btn:hover { border-color: var(--accent-mid); }
+button.btn { font-family: inherit; cursor: pointer; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.print-title { display: none; }
 
 .section-title {
     font-family: 'Lora', serif; font-size: 1.05rem; font-weight: 700; color: var(--heading);
@@ -196,6 +199,11 @@ footer {
     .muted { white-space: normal; font-size: 0.78rem; }
 }
 @media print {
-    .navbar, .toolbar, footer, .admin-fab { display: none !important; }
+    .navbar, .toolbar, footer, .admin-fab, [role="status"] { display: none !important; }
     body { background: #fff; }
+    .page-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 1.25rem 1.5rem; }
+    .content-wrap { padding: 1rem 0; gap: 1.25rem; }
+    .panel, .stat, .table-wrap { break-inside: avoid; }
+    .bar-fill, .col, .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table { min-width: 0; }
 }
