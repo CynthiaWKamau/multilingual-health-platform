@@ -117,14 +117,6 @@ body {
     color: var(--white) !important; padding: 5px 14px; border-radius: 6px; font-weight: 600 !important;
 }
 .nav-logout:hover { background: rgba(255,255,255,0.2) !important; }
-.lang-switcher { display: flex; align-items: center; gap: 4px; }
-.lang-btn {
-    padding: 4px 10px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.25);
-    color: rgba(255,255,255,0.78); font-size: 0.75rem; font-weight: 600;
-    text-decoration: none; transition: all 0.2s; white-space: nowrap;
-}
-.lang-btn:hover  { border-color: rgba(255,255,255,0.6); color: var(--white); }
-.lang-btn.active { background: var(--green-light); border-color: var(--green-light); color: var(--green-deep); }
 
 /* ── Hero ── */
 .page-hero {
@@ -333,14 +325,6 @@ footer {
         <a href="../health/index.php">Health Education</a>
         <a href="../myth/index.php">Myth vs Fact</a>
         <a href="../symptom/index.php">Symptoms</a>
-        <div class="lang-switcher">
-            <a href="../dashboard/language.php?lang=english&redirect=<?= urlencode('../chw/index.php') ?>"
-               class="lang-btn <?= $lang === 'english'   ? 'active' : '' ?>">EN</a>
-            <a href="../dashboard/language.php?lang=kiswahili&redirect=<?= urlencode('../chw/index.php') ?>"
-               class="lang-btn <?= $lang === 'kiswahili' ? 'active' : '' ?>">SW</a>
-            <a href="../dashboard/language.php?lang=maa&redirect=<?= urlencode('../chw/index.php') ?>"
-               class="lang-btn <?= $lang === 'maa'       ? 'active' : '' ?>">MAA</a>
-        </div>
         <a href="../auth/logout.php" class="nav-logout">Logout</a>
     </nav>
 </header>

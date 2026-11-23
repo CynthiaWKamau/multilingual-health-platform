@@ -2,6 +2,7 @@
 session_start();
 include '../config/database.php';
 include '../config/activity.php';
+include '../config/charts.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: ../auth/login.php');
@@ -43,18 +44,12 @@ foreach ($totals as $type => $n) {
 }
 $active_users = (int)(report_rows($conn, "SELECT COUNT(DISTINCT user_id) AS n FROM activity_log WHERE $since", 'i', $days)[0]['n'] ?? 0);
 
-// Daily activity
-$daily_raw = [];
-foreach (report_rows($conn, "SELECT DATE(created_at) AS d, COUNT(*) AS n FROM activity_log WHERE $since GROUP BY d", 'i', $days) as $r) {
-    $daily_raw[$r['d']] = (int)$r['n'];
-}
-$chart_days = min($days, 30);
-$daily = [];
-for ($i = $chart_days - 1; $i >= 0; $i--) {
-    $d = date('Y-m-d', strtotime("-$i days"));
-    $daily[$d] = $daily_raw[$d] ?? 0;
-}
-$daily_max = max($daily) ?: 1;
+// Activity over time
+$buckets = trend_buckets($days);
+$trend = trend_fill(report_rows($conn,
+    "SELECT {$buckets['expr']} AS k, activity_type AS g, COUNT(*) AS n FROM activity_log
+     WHERE $since GROUP BY k, g",
+    'i', $days), $buckets['keys'], ['symptom_check', 'myth_check', 'article_view']);
 
 // Health trends
 $top_symptoms = report_rows($conn,
@@ -125,8 +120,9 @@ if (($_GET['export'] ?? '') === 'csv') {
             fputcsv($out, [$section, $r['label'], $r['n']]);
         }
     }
-    foreach ($daily as $d => $n) {
-        fputcsv($out, ['Daily activity', $d, $n]);
+    foreach ($buckets['keys'] as $i => $k) {
+        $n = $trend['symptom_check'][$k] + $trend['myth_check'][$k] + $trend['article_view'][$k];
+        fputcsv($out, ['Activity over time', $buckets['labels'][$i], $n]);
     }
     fclose($out);
     exit();
@@ -195,44 +191,42 @@ if (($_GET['export'] ?? '') === 'csv') {
 
     <section>
         <h2 class="section-title">Activity</h2>
-        <div class="grid-2">
-            <div class="panel">
-                <h3>Daily activity (last <?= $chart_days ?> days)</h3>
-                <div class="columns">
-                    <?php foreach ($daily as $d => $n): ?>
-                        <div class="col" style="height:<?= max(1, round($n / $daily_max * 100)) ?>%" title="<?= date('d M', strtotime($d)) ?>: <?= $n ?>"></div>
-                    <?php endforeach; ?>
-                </div>
-                <div class="columns-axis">
-                    <span><?= date('d M', strtotime(array_key_first($daily))) ?></span>
-                    <span>Today</span>
-                </div>
+        <div class="grid-2 cols-2">
+            <div class="panel wide">
+                <h3>Platform activity over time</h3>
+                <?= trend_chart($buckets['labels'], [
+                    ['label' => 'Symptom checks', 'data' => $trend['symptom_check'], 'color' => '#2d6a4f'],
+                    ['label' => 'Myth checks',    'data' => $trend['myth_check'],    'color' => '#c9913d'],
+                    ['label' => 'Article views',  'data' => $trend['article_view'],  'color' => '#52b788'],
+                ], 'No activity in this period.', 300) ?>
             </div>
             <div class="panel">
                 <h3>Activity by type</h3>
-                <?= bar_chart($by_type, 'label', 'No activity in this period.') ?>
-                <h3 style="margin-top:1.25rem">Activity by language</h3>
-                <?= bar_chart($activity_lang, 'label', 'No activity in this period.') ?>
+                <?= chart('doughnut', $by_type, 'label', 'No activity in this period.') ?>
+            </div>
+            <div class="panel">
+                <h3>Activity by language</h3>
+                <?= chart('pie', $activity_lang, 'label', 'No activity in this period.') ?>
             </div>
         </div>
     </section>
 
     <section>
         <h2 class="section-title">Health trends</h2>
-        <div class="grid-2">
-            <div class="panel"><h3>Most checked symptoms</h3><?= bar_chart($top_symptoms, 'detail', 'No symptom checks in this period.') ?></div>
-            <div class="panel"><h3>Symptom urgency</h3><?= bar_chart($urgency, 'label', 'No symptom checks in this period.') ?></div>
-            <div class="panel"><h3>Myth checker results</h3><?= bar_chart($verdicts, 'label', 'No myth checks in this period.') ?></div>
+        <div class="grid-2 cols-2">
+            <div class="panel"><h3>Most checked symptoms</h3><?= chart('hbar', $top_symptoms, 'detail', 'No symptom checks in this period.', ['series' => 'Checks', 'height' => 300]) ?></div>
+            <div class="panel"><h3>Symptom urgency</h3><?= chart('doughnut', $urgency, 'label', 'No symptom checks in this period.', ['semantic' => true, 'height' => 300]) ?></div>
+            <div class="panel"><h3>Myth checker results</h3><?= chart('doughnut', $verdicts, 'label', 'No myth checks in this period.', ['semantic' => true]) ?></div>
             <div class="panel"><h3>Most read articles</h3><?= bar_chart($top_articles, 'title', 'No articles read in this period.') ?></div>
         </div>
     </section>
 
     <section>
         <h2 class="section-title">Users</h2>
-        <div class="grid-2">
-            <div class="panel"><h3>Users by role</h3><?= bar_chart($by_role, 'label', 'No users yet.') ?></div>
-            <div class="panel"><h3>Preferred language</h3><?= bar_chart($by_lang, 'label', 'No users yet.') ?></div>
-            <div class="panel"><h3>New registrations (last 6 months)</h3><?= bar_chart($registrations, 'label', 'No registrations in this period.') ?></div>
+        <div class="grid-2 cols-2">
+            <div class="panel"><h3>Users by role</h3><?= chart('doughnut', $by_role, 'label', 'No users yet.') ?></div>
+            <div class="panel"><h3>Preferred language</h3><?= chart('pie', $by_lang, 'label', 'No users yet.') ?></div>
+            <div class="panel"><h3>New registrations (last 6 months)</h3><?= chart('bar', $registrations, 'label', 'No registrations in this period.', ['series' => 'New users']) ?></div>
             <div class="panel">
                 <h3>Most active users</h3>
                 <?php if (!$top_users): ?>
@@ -246,9 +240,9 @@ if (($_GET['export'] ?? '') === 'csv') {
 
     <section>
         <h2 class="section-title">Content</h2>
-        <div class="grid-2">
-            <div class="panel"><h3>Content library</h3><?= bar_chart($content, 'label', 'No content yet.') ?></div>
-            <div class="panel"><h3>CHW content suggestions</h3><?= bar_chart($suggestions, 'label', 'No suggestions yet.') ?></div>
+        <div class="grid-2 cols-2">
+            <div class="panel"><h3>Content library</h3><?= chart('bar', $content, 'label', 'No content yet.', ['series' => 'Items']) ?></div>
+            <div class="panel"><h3>CHW content suggestions</h3><?= chart('doughnut', $suggestions, 'label', 'No suggestions yet.', ['semantic' => true]) ?></div>
         </div>
     </section>
 
@@ -257,5 +251,6 @@ if (($_GET['export'] ?? '') === 'csv') {
 <footer>
     <p>© 2026 Samburu Health Platform — Admin Panel</p>
 </footer>
+<?= chart_scripts() ?>
 </body>
 </html>

@@ -3,6 +3,7 @@ session_start();
 include '../config/database.php';
 include '../config/translate.php';
 include '../config/activity.php';
+include '../config/charts.php';
 
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['chw', 'admin'], true)) {
     header('Location: ../auth/login.php');
@@ -73,6 +74,17 @@ foreach (report_rows($conn,
     'i', $days) as $r) {
     $languages[] = ['label' => $lang_names[$r['language']] ?? ucfirst($r['language']), 'n' => $r['n']];
 }
+
+// Symptom checks over time
+$buckets = trend_buckets($days);
+$trend_rows = report_rows($conn,
+    "SELECT {$buckets['expr']} AS k, 'all' AS g, COUNT(*) AS n FROM activity_log
+     WHERE activity_type = 'symptom_check' AND $since GROUP BY k
+     UNION ALL
+     SELECT {$buckets['expr']} AS k, 'high' AS g, COUNT(*) AS n FROM activity_log
+     WHERE activity_type = 'symptom_check' AND result = 'high' AND $since GROUP BY k",
+    'ii', $days, $days);
+$trend = trend_fill($trend_rows, $buckets['keys'], ['all', 'high']);
 
 $back = $_SESSION['role'] === 'admin' ? '../admin/index.php' : 'index.php';
 
@@ -177,14 +189,22 @@ if (($_GET['export'] ?? '') === 'csv') {
 
     <section>
         <h2 class="section-title">Symptoms</h2>
-        <div class="grid-2">
+        <div class="grid-2 cols-2">
+            <div class="panel wide">
+                <h3>Symptom checks and high-urgency cases over time</h3>
+                <?= trend_chart($buckets['labels'], [
+                    ['label' => 'All symptom checks', 'data' => $trend['all'],  'color' => '#2d6a4f'],
+                    ['label' => 'High urgency',       'data' => $trend['high'], 'color' => '#b5294a'],
+                ], 'No symptom checks in this period.') ?>
+                <p class="panel-note">A rise in high-urgency cases may call for a follow-up visit or a health talk.</p>
+            </div>
             <div class="panel">
                 <h3>Most checked symptoms</h3>
-                <?= bar_chart($top_symptoms, 'detail', 'No symptom checks in this period.') ?>
+                <?= chart('hbar', $top_symptoms, 'detail', 'No symptom checks in this period.', ['series' => 'Checks', 'height' => 300]) ?>
             </div>
             <div class="panel">
                 <h3>Urgency of symptom checks</h3>
-                <?= bar_chart($urgency, 'label', 'No symptom checks in this period.') ?>
+                <?= chart('doughnut', $urgency, 'label', 'No symptom checks in this period.', ['semantic' => true, 'height' => 300]) ?>
             </div>
         </div>
     </section>
@@ -213,14 +233,14 @@ if (($_GET['export'] ?? '') === 'csv') {
 
     <section>
         <h2 class="section-title">Myths and education</h2>
-        <div class="grid-2">
+        <div class="grid-2 cols-2">
             <div class="panel">
                 <h3>Statements most often identified as myths</h3>
                 <?= bar_chart($top_myths, 'detail', 'No myths identified in this period.') ?>
             </div>
             <div class="panel">
                 <h3>Myth checker results</h3>
-                <?= bar_chart($verdicts, 'label', 'No myth checks in this period.') ?>
+                <?= chart('doughnut', $verdicts, 'label', 'No myth checks in this period.', ['semantic' => true]) ?>
             </div>
             <div class="panel">
                 <h3>Most read articles</h3>
@@ -228,7 +248,7 @@ if (($_GET['export'] ?? '') === 'csv') {
             </div>
             <div class="panel">
                 <h3>Languages used</h3>
-                <?= bar_chart($languages, 'label', 'No activity in this period.') ?>
+                <?= chart('pie', $languages, 'label', 'No activity in this period.') ?>
             </div>
         </div>
     </section>
@@ -239,6 +259,7 @@ if (($_GET['export'] ?? '') === 'csv') {
     <p>© 2026 Samburu Health Platform</p>
     <p>Community Health Worker Portal</p>
 </footer>
+<?= chart_scripts() ?>
 <script src="../pwa.js"></script>
 </body>
 </html>

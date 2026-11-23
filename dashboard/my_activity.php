@@ -3,6 +3,7 @@ session_start();
 include '../config/database.php';
 include '../config/translate.php';
 include '../config/activity.php';
+include '../config/charts.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php');
@@ -44,6 +45,26 @@ $articles = report_rows($conn,
      FROM activity_log a JOIN health_education h ON h.id = a.ref_id
      WHERE a.user_id = ? AND a.activity_type = 'article_view' AND a.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
      GROUP BY h.id ORDER BY last_read DESC LIMIT 20",
+    'ii', $uid, $days);
+
+// Activity over time
+$buckets = trend_buckets($days);
+$trend = trend_fill(report_rows($conn,
+    "SELECT {$buckets['expr']} AS k, activity_type AS g, COUNT(*) AS n FROM activity_log
+     WHERE user_id = ? AND $since GROUP BY k, g",
+    'ii', $uid, $days), $buckets['keys'], ['symptom_check', 'myth_check', 'article_view']);
+
+// Urgency of own symptom checks
+$my_urgency = report_rows($conn,
+    "SELECT COALESCE(result, 'unknown') AS result, COUNT(*) AS n FROM activity_log
+     WHERE user_id = ? AND activity_type = 'symptom_check' AND $since
+     GROUP BY result ORDER BY FIELD(result, 'low', 'medium', 'high') DESC",
+    'ii', $uid, $days);
+
+// Own myth checker results
+$my_verdicts = report_rows($conn,
+    "SELECT COALESCE(result, 'unknown') AS result, COUNT(*) AS n FROM activity_log
+     WHERE user_id = ? AND activity_type = 'myth_check' AND $since GROUP BY result",
     'ii', $uid, $days);
 
 $urgency_label = ['high' => __('High'), 'medium' => __('Medium'), 'low' => __('Low')];
@@ -154,6 +175,38 @@ if (($_GET['export'] ?? '') === 'csv') {
     </div>
 
     <section>
+        <h2 class="section-title"><?= __('Your activity at a glance') ?></h2>
+        <div class="grid-2 cols-3">
+            <div class="panel wide">
+                <h3><?= __('Your activity over time') ?></h3>
+                <?= trend_chart($buckets['labels'], [
+                    ['label' => __('Symptom Checks'), 'data' => $trend['symptom_check'], 'color' => '#2d6a4f'],
+                    ['label' => __('Myth Checks'),    'data' => $trend['myth_check'],    'color' => '#c9913d'],
+                    ['label' => __('Articles Read'),  'data' => $trend['article_view'],  'color' => '#52b788'],
+                ], __('No activity in this period.')) ?>
+            </div>
+            <div class="panel">
+                <h3><?= __('What you used most') ?></h3>
+                <?= chart('doughnut', [
+                    ['label' => __('Symptom Checks'), 'n' => $totals['symptom_check']],
+                    ['label' => __('Myth Checks'),    'n' => $totals['myth_check']],
+                    ['label' => __('Articles Read'),  'n' => $totals['article_view']],
+                ], 'label', __('No activity in this period.')) ?>
+            </div>
+            <div class="panel">
+                <h3><?= __('Urgency of your symptom checks') ?></h3>
+                <?= chart('doughnut', array_map(fn($r) => ['label' => $urgency_label[$r['result']] ?? __('Unknown'), 'n' => $r['n']], $my_urgency),
+                    'label', __('No symptom checks in this period.'), ['semantic' => true]) ?>
+            </div>
+            <div class="panel">
+                <h3><?= __('Your myth checker results') ?></h3>
+                <?= chart('doughnut', array_map(fn($r) => ['label' => $verdict_label[$r['result']] ?? __('Unknown'), 'n' => $r['n']], $my_verdicts),
+                    'label', __('No myth checks in this period.'), ['semantic' => true]) ?>
+            </div>
+        </div>
+    </section>
+
+    <section>
         <h2 class="section-title"><?= __('Symptom Checks') ?></h2>
         <?php if (!$symptoms): ?>
             <div class="table-wrap"><p class="empty"><?= __('No symptom checks in this period.') ?></p></div>
@@ -225,6 +278,7 @@ if (($_GET['export'] ?? '') === 'csv') {
     <p>© 2026 Samburu Health Platform</p>
     <p><?= __('Health education and basic telemedicine guidance for rural communities in Kenya') ?></p>
 </footer>
+<?= chart_scripts() ?>
 <script src="../pwa.js"></script>
 </body>
 </html>

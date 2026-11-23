@@ -198,4 +198,12 @@ return [
     'Save as PDF' => 'Hifadhi kama PDF',
     'Activity' => 'Shughuli',
     'Details' => 'Maelezo',
+
+    // Report charts
+    'Your activity at a glance'      => 'Muhtasari wa shughuli zako',
+    'Your activity over time'        => 'Shughuli zako kwa muda',
+    'What you used most'             => 'Ulichotumia zaidi',
+    'Urgency of your symptom checks' => 'Uharaka wa ukaguzi wako wa dalili',
+    'Your myth checker results'      => 'Matokeo ya ukaguzi wako wa dhana potofu',
+    'No activity in this period.'    => 'Hakuna shughuli katika kipindi hiki.',
 ];
